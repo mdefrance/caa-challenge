@@ -489,8 +489,12 @@ Source: [github.com/mdefrance/AutoCarver](https://github.com/mdefrance/AutoCarve
 if it earns a place in your pipeline, a ⭐ helps others find it.
 
 Full challenge code: [github.com/mdefrance/caa-challenge](https://github.com/mdefrance/caa-challenge) (this repo) ·
-Runnable notebook on Kaggle: *(link pending — repo URL and Kaggle notebook are
-both blocked on the publish-target decision)*.
+Runnable on Kaggle, against the mirrored challenge data:
+[frequency model](https://www.kaggle.com/code/mariodefrance/caa-frequency-model) ·
+[severity model](https://www.kaggle.com/code/mariodefrance/caa-amount-model) ·
+[dataset](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025) — mirrored
+under the Etalab Licence Ouverte 2.0, which is what ENS *Challenge Data* Study Data
+carries by default.
 
 ---
 

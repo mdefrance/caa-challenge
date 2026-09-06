@@ -86,6 +86,21 @@ Each CSV under `data/ab_arms/` is written by one of the above and nothing else:
 `tools/measure_grid.py`. Every measurement the article quotes has a script in
 this repository that regenerates it.
 
+## Run it without installing anything
+
+Both 2026 notebooks are hosted on Kaggle, attached to a mirror of the challenge data, and
+run end to end there:
+
+- [frequency model](https://www.kaggle.com/code/mariodefrance/caa-frequency-model)
+- [severity model](https://www.kaggle.com/code/mariodefrance/caa-amount-model) — consumes
+  the frequency model's hand-off, so run the frequency one first
+- [dataset](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025)
+
+Kaggle's image ships a numpy older than AutoCarver's floor, and its kernel imports numpy at
+startup, so the install cell upgrades numpy underneath a live kernel. Install in the first
+cell, **restart the session**, then run from the top; otherwise the next import fails with
+`AttributeError: module 'numpy._core._multiarray_umath' has no attribute '_blas_supports_fpe'`.
+
 ## Getting started
 
 ```bash
@@ -93,7 +108,9 @@ uv sync
 ```
 
 1. Download the challenge data into `data/` — see [`data/README.md`](data/README.md).
-   Four files are needed, including `Incendies.csv`. To read them from somewhere else,
+   Four files are needed, including `Incendies.csv`. The exact extract behind the
+   article's numbers is mirrored as a
+   [Kaggle dataset](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025). To read them from somewhere else,
    set `CAA_DATA_DIR`, or pass the directory straight to the transformer —
    `Processor(data_dir="/kaggle/input/…")` — which is the easier route in a hosted
    notebook, where an environment variable would have to be set before the import.
