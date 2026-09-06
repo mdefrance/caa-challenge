@@ -8,7 +8,7 @@ with every number measured on one machine.
 
 **Authors:** Mario Defrance & Zacharie Buisson — finished **1st** on the
 challenge. The challenge was used as a teaching vehicle in the **Data Science**
-course we taught to final-year engineering students at **CY Tech**.
+course we taught to the final-year **Fintech** students at **CY Tech**.
 
 The approach is a classic actuarial **frequency–severity decomposition**, with
 all feature engineering and supervised binning handled by the open-source
@@ -55,7 +55,8 @@ src/
   amount_model_2026.ipynb            # 2026 severity re-run (consumes the frequency hand-off)
   frequency_model_2025_timed.ipynb   # AutoCarver 7.0.5 carving-only timing baseline
   amount_model_2025_timed.ipynb      # same, severity side
-  ab_carver_arms_2026.ipynb          # A/B: carver geometry arms (one-vs-rest / multiclass / ordinal / Wilson off)
+  ab_carver_arms_2026.ipynb          # A/B: carver geometry arms (one-vs-rest / multiclass /
+                                     #   ordinal, plus a Wilson-CI-off control)
   frequency_model_2026_ordinal_selector.ipynb
                                      # negative result: the frequency arm re-selected with
                                      #   OrdinalSelector instead of ClassificationSelector
@@ -73,6 +74,9 @@ tools/
   cmp_selectors.py                   # Classification vs Ordinal selector on one carved frame
   measure_grid.py                    # the same, varying each selector's association measures
 docs/                                # figures used by the article, generated from this data
+  hero_<F>.svg                       #   transparent and theme-aware (CSS vars + a
+                                     #   prefers-color-scheme override injected into the file)
+  hero_<F>.png / _dark.png           #   opaque fallbacks for platforms that refuse SVG
 ARTICLE.md                           # the article itself; its figure paths are repo-relative
 requirements-705.txt                 # frozen AutoCarver 7.0.5 environment for the 2025 baselines
 ```
@@ -167,7 +171,7 @@ remains subject to the competition's own terms of use.
 
 Thanks to **Crédit Agricole Assurances** and **ENS Challenge Data** for
 organising the competition and releasing the dataset publicly, and to the
-final-year Data Science students at **CY Tech** who tackled it alongside us.
+**Fintech** students at **CY Tech** who tackled it alongside us.
 
 Built with [AutoCarver](https://github.com/mdefrance/AutoCarver) ·
 [docs](https://autocarver.readthedocs.io) · `pip install autocarver`

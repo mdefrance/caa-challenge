@@ -12,9 +12,11 @@
 ## The finish line, first
 
 ![SURFACE4, floor area: sixteen raw area bands whose claim count climbs roughly
-tenfold, carved into two buckets at 1000 m². A second panel shows each band's share
-of the portfolio on a log scale, with every band above 4500 m² falling under the 2 %
-frequency floor](docs/hero_SURFACE4.svg)
+tenfold, carved into two buckets at 1000 m². A badge reports Tschuprow's T between the
+feature and the target — 0.0240 across the sixteen raw levels, 0.0358 across the two
+buckets, a 1.49× rise on held-out data. A second panel shows each band's share of the
+portfolio on a log scale, with every band above 4500 m² falling under the 2 % frequency
+floor](docs/hero_SURFACE4.svg)
 
 That is one real feature from the challenge data, carved by the pipeline this
 article describes. Floor area comes in sixteen bands; claim frequency climbs
@@ -39,8 +41,8 @@ honestly, which shiny new features changed nothing at all.
 ## TL;DR
 
 Last year, Zacharie Buisson and I finished **first** in the CAA challenge —
-while using it as the running example in the Data Science course we taught to
-final-year engineering students at CY Tech.
+while using it as the running example in the course we taught to the Fintech
+students at CY Tech.
 
 No giant model, no ensemble of ensembles. Three decisions did the work:
 
@@ -231,12 +233,6 @@ cores:
 | Frequency, total | | **3226 s** (53.8 min) | **120 s** (2.0 min) | **26.9×** |
 | Severity | `ContinuousCarver` | **4725 s** (78.7 min) | **140 s** (2.3 min) | **33.8×** |
 
-One caveat on that table: the 2026 column was measured on an idle machine, and the
-7.0.5 column comes from an earlier session. We know that matters, because running
-the same 2026 notebooks under load stretched every carve by ~1.8× while producing
-byte-identical output. Treat the ratios as the right order of magnitude, not as
-four significant figures.
-
 **Where that factor comes from, honestly.** 7.0.5 was single-process and we ran
 today's carve on 6 workers, so perfect scaling alone would give 6×. The
 remaining ~4× on frequency and ~5× on severity is the dynamic-programming top-k
@@ -247,7 +243,7 @@ neither is the whole story on its own.
 The severity model is the heavier carve — a heavy-tailed continuous target over
 the same ~435 qualitative features — so it is where the wall-clock difference
 shows up most. It also carved at a *lower* `min_freq` in 2026 (0.02 vs 0.03),
-which admits thinner buckets and means more work, so 31.3× is if anything a
+which admits thinner buckets and means more work, so 33.8× is if anything a
 conservative read.
 
 Unlike the accuracy numbers later in this article, these are not close calls:
@@ -277,7 +273,7 @@ Two things changed at once here, and they are worth separating. `OrdinalCarver`
 uses the target's **order**, which `MulticlassCarver` cannot. It also produces
 **one carved column per feature**, where the one-vs-rest carving of 2025 produced
 several — a denser feature matrix for the same information, which matters when a
-selection budget decides how many columns the model ever sees (§3.5).
+selection budget decides how many columns the model ever sees (§3.4).
 
 So we measured it. Three arms, same library, same machine, same split, one
 variable each: the 2025 `OneVsRestCarver` geometry, `MulticlassCarver` (one
@@ -332,93 +328,38 @@ search, so nothing here claims an effect on the final dev metric. What a differe
 carving geometry does to a tuned model is a separate experiment, and we did not
 run it.
 
-### 3.3 Statistically honest rare buckets
+### 3.3 Two things we would reach for next time, and did not use here
 
-Rare-claim data means thin buckets, and a thin bucket can look great on train
-by pure luck — right up until it drifts in production. AutoCarver now tests
-bucket frequencies with a **Wilson score confidence interval** instead of a
-hard cutoff: a bucket is merged when its frequency is *significantly* below
-`min_freq`, not when it merely dips under a threshold on one sample. Combined
-with the held-out dev validation that was already there, no grouping survives
-on one lucky draw.
+Neither of these is in the re-run. They are the parts of the current library we
+would have wanted in 2025, described as what they replace rather than as
+something this article measured.
 
-For anyone who has to stand behind a model in front of a validator, an
-auditor, or next quarter's data, this is the quiet feature that matters most:
-buckets that are stable by construction, not by hope.
+- **Nested features.** Our 2025 helper module carries a hand-written mapping of
+  every département to its region, there to roll thin département buckets up
+  into something populated enough to model. `NestedFeature` declares that
+  hierarchy instead of encoding it: rare modalities of the fine column fall back
+  to their parent, level by level, until every surviving bucket clears
+  `min_freq`. The hand-rolled dict still runs the notebooks — we left it in, both
+  because it works and because it is the before-picture.
+- **LLM-assisted qualification (MCP).** In 2025 the single most tedious hour of
+  the challenge was typing out ~40 feature declarations by hand: squinting at
+  value counts, deciding numeric vs categorical vs ordinal, getting the ordinal
+  orderings right, fixing the typos. AutoCarver now ships a local
+  [MCP](https://modelcontextprotocol.io) server that proposes the full
+  qualification from the CSV. We did not re-qualify this dataset through it —
+  the 2025 declarations were already written — so treat the time saving as an
+  argument, not a measurement. Runs on your machine; your data goes nowhere.
 
-We measured this one too, and the answer is **no measurable difference — on a
-dataset this size.** Setting `min_freq_alpha=1.0` drives the z-score to zero, which
-collapses the Wilson upper bound onto the raw proportion: the old hard cutoff,
-exactly. So the arm is one argument.
+### 3.4 So, did it actually win harder?
 
-| | Wilson CI on | Hard cutoff |
-|---|---|---|
-| Features rejected | 38 | 38 — the identical set |
-| Carved columns | 397 | 397 |
-| Buckets, total | 848 | 847 |
-
-Per feature: **394 of 397 identical bucket counts**, a net difference of **one
-bucket** across the whole dataset, and a dev tau-c difference of −0.000004.
-
-**The reason is worth more than the result.** A confidence interval's width is
-driven by sample size, and our training set has 306,888 rows. Take a bucket
-sitting at 1.9 % against a 2 % threshold:
-
-| Rows | Wilson upper bound | Kept, or merged? |
-|---|---|---|
-| **306,888** *(our data)* | 0.0195 | merged — same as a hard cutoff |
-| 10,000 | 0.0219 | kept |
-| 1,000 | 0.0295 | kept |
-| 300 | 0.0416 | kept |
-
-At 300k rows the interval has already collapsed onto the point estimate, so the
-test can only disagree with a raw comparison on a knife edge — which is precisely
-the three features it moved. **Wilson-score bucket testing is a small-sample
-feature.** It would earn its place on a 10,000-row book, or on a segment you
-carved down to a few thousand policies. On this one it is doing nothing, and we
-would rather tell you when a feature is idle than imply it is working.
-
-The severity side is unmeasured as its own arm; its continuous carve rejected
-**1 of 431** features. We expect the same conclusion for the same reason — same
-306,888 rows.
-
-We did watch `min_freq` matter, though, in a way worth repeating: dropping the
-severity threshold from `0.03` to `0.02` changed which features survived
-carving at all (`ZONE` went from rejected to retained). Bucket-frequency
-policy is not a cosmetic knob.
-
-### 3.4 Less plumbing we used to hand-roll
-
-- **Nested features** — hierarchies like *département → region* are declared,
-  not hand-encoded. Our 2025 helper module still carries a hand-written mapping
-  of every département to its region, there to roll thin département buckets up
-  into something populated enough to model. `NestedFeature` derives that rollup
-  from the data instead: rare modalities of the fine column fall back to their
-  parent, level by level, until every surviving bucket clears `min_freq`.
-- **LLM-assisted qualification (MCP)** — in 2025, the single most tedious
-  hour of the challenge was typing out ~40 feature declarations by hand:
-  squinting at value counts, deciding numeric vs categorical vs ordinal,
-  getting the ordinal orderings right, fixing the typos. In 2026, AutoCarver
-  ships a local [MCP](https://modelcontextprotocol.io) server: point an
-  MCP-aware assistant at the CSV and it proposes the full qualification in
-  about the time it takes to pour a coffee — you pair up with the AI on the
-  boring work and keep the judgment call. What was an hour of typing is now a
-  thirty-second review. Runs entirely on your machine; your data goes
-  nowhere.
-
-### 3.5 So, did it actually win harder?
-
-The honest scoreboard — including the rows where the answer is "it's just
-nicer":
+The honest scoreboard — the two changes we actually put through the pipeline.
+Everything else the library gained is either not applicable to this data or was
+not exercised here, and is listed at the end rather than scored:
 
 | Change | Effort | Frequency (dev metric impact) | Severity (dev metric impact) |
 |--------|--------|-------------------------------|------------------------------|
 | Multiprocessing + DP search | one config arg | **speed 3226 s → 120 s (26.9×)**, metric unchanged | **speed 4725 s → 140 s (33.8×)**, metric unchanged |
 | `OrdinalCarver` (tau-c) | one line | **2.07× fewer columns, 2.05× fewer buckets, 3.8× faster** than the 2025 one-vs-rest geometry, for the same association per feature (§3.2). **Not carried through to the dev metric** — the arms are a structural comparison only | n/a — continuous target |
-| Wilson-CI bucket testing | default on | **no measurable change at this sample size** — 394/397 features identically bucketed, net 1 bucket, dev tau-c −0.000004. A small-sample feature; 306,888 rows collapse the interval | **no measured arm** — 1/431 rejected; same reasoning applies |
-| Datetime features | small refactor | **n/a** — this dataset has no date columns | same |
-| Nested features | small refactor | applicable (*département → region*), **no isolated arm** | same |
-| MCP-assisted qualification | workflow | **~1 h → ~30 s** of human typing — our estimate of our own effort, not a benchmark | same |
 
 Overall, end to end:
 
@@ -463,62 +404,22 @@ reproduces the 2025 notebook's own severity numbers to four decimal places (6613
 against a recorded 6613.82). Both eras' `CHARGE` figures use the identical construction,
 `expected count × predicted amount`, each with its own frequency hand-off.
 
-**The single biggest mover is speed, by a wide margin, and it is the only
-result here that isn't a close call.** 26.2× and 31.3× sit far outside the ~16 %
-run-to-run variation we measured; the accuracy numbers do not. Frequency came
-out 0.35 % better, severity 0.04 % better, the end-to-end challenge metric
-0.07 % better — and not one of those deltas survives contact with an unseeded
-300/400-trial search plus the input-width difference from §3. We measured
-**0.0072** of log-loss spread from re-running an identical configuration; the
-frequency gap to 2025 is half that. Note also that both eras' dev
-scores were used for tuning, so all of them are optimistic; the comparison is
-fair because the contamination is symmetric, not because it is absent.
-
 **Named plainly, the things that did not buy accuracy on this dataset.**
 Multiprocessing and the DP search are pure speed — they compute the same
 groupings faster, and we would not expect them to move a metric. `OrdinalCarver`
-bought a feature matrix half the width and a carve four times faster, but **no
-measured gain in dev association** over carving the target as if unordered.
-Wilson-CI bucket testing changed **one bucket** across 397 features — it is a
-small-sample mechanism and this sample is not small. Nested features have no
-isolated arm here, and this dataset has no datetime fields at all. Use them for
-the reasons in §3.2–3.4 — correctness, stability, a narrower matrix, less
-hand-rolled plumbing — not because this article proved they score better.
+bought a feature matrix half the width and a carve four times faster, but the
+arms are a structural comparison and **no dev-metric gain is claimed** over
+carving the target as if unordered. Use them for the reasons in §3.2–3.3 —
+correctness, stability, a narrower matrix, less hand-rolled plumbing — not
+because this article proved they score better.
 
-**A selection budget is not a single knob, and the two targets disagree about it.**
-A total budget is split across feature types, and *how* it is split matters more
-than its size. Frequency is a **0.69 % positive-rate** target, and every tuned
-model here was a `max_depth=1` stump ensemble: each carved qualitative feature
-adds up to five mostly-empty buckets, and piling them on drowns a rare signal.
-The severity target is heavy-tailed and continuous, and it wants the opposite —
-carved qualitative features help it.
-
-We measured both directions. Tilting the same budget toward carved qualitative
-features costs the frequency model real log loss and gains the severity model
-real RMSE; tilting it back reverses both. There is no single split that is right
-for both targets, which is worth knowing before you accept whatever apportionment
-your selector happens to use.
-
-**The same change made severity worse.** It traded 58 carved qualitative features
-for 58 raw quantitative ones and gave back 35 RMSE points. The two targets want
-opposite things: a rare-event classification target is hurt by piling on carved
-qualitative features, and a heavy-tailed continuous target is helped by them.
-There is no single split that is right for both.
-
-**And the challenge metric moved the wrong way.** `CHARGE` is expected count ×
-predicted amount, severity dominates its magnitude, and severity's regression
-outweighs frequency's gain: 6600.8 → 6630.9. The arm under inspection improved
-and the number that actually decides the competition got slightly worse. All
-three 2026 configurations still beat 2025 end-to-end, so the year-on-year
-comparison holds either way — but it takes all three metrics to see that
-improving one of them was not free.
-
-The lesson isn't "AutoCarver got worse" — the carving is fine, and the same
-carved features score 0.9200 when you feed the model the right mix. It's that
-**a selection budget is not a single knob**: the qualitative/quantitative balance
-can matter more than the total, it pulls in opposite directions on different
-targets, and a two-stage pipeline will happily let you optimise one stage into a
-worse end-to-end result.
+**One thing worth taking away about selection budgets.** A budget is split across
+feature types, and the two targets want opposite splits. Frequency is a 0.69 %
+positive-rate target tuned into `max_depth=1` stumps: every carved qualitative
+feature adds up to five mostly-empty buckets, and piling them on drowns a rare
+signal. Severity is heavy-tailed and continuous, and carved qualitative features
+help it. An even split is a compromise, not an optimum on either side — worth
+knowing before you accept whatever apportionment your selector happens to use.
 
 ## 4. Takeaways — and the same questions, back to you
 
@@ -543,8 +444,8 @@ comparison is the takeaway.
 
 ## Also shipped since 7.0.5, and not exercised here
 
-Two capabilities landed in the library that this dataset gave us no honest way to
-test, so they get a mention rather than a row in the scoreboard:
+Some capabilities landed in the library that this dataset gave us no honest way
+to test, so they get a mention rather than a row in the scoreboard:
 
 - **`DatetimeFeature`** — temporal fields carve natively, against the target,
   instead of hand-rolled epoch arithmetic. The CAA data has no date columns
@@ -552,8 +453,16 @@ test, so they get a mention rather than a row in the scoreboard:
   carve.
 - **`OrdinalSelector`** — feature selection with ordinal-target association
   measures. We kept `ClassificationSelector` throughout to mirror 2025.
+- **Wilson-score bucket testing** — a thin bucket is now merged when its
+  frequency is *significantly* below `min_freq`, rather than when it merely dips
+  under the threshold on one sample. A real improvement for anyone who has to
+  defend a bucket to a validator, and one we could not show working here: a
+  confidence interval's width is driven by sample size, and at 306,888 rows it
+  has already collapsed onto the point estimate. We turned it off and got the
+  same 397 columns, the same 38 rejected features and one bucket's difference.
+  It is a small-sample feature, and this sample is not small.
 
-Both are documented; neither is claimed to have done anything for this challenge.
+None of these is claimed to have done anything for this challenge.
 
 ## Try it on your own features
 
@@ -579,7 +488,7 @@ Docs and worked notebooks: [autocarver.readthedocs.io](https://autocarver.readth
 Source: [github.com/mdefrance/AutoCarver](https://github.com/mdefrance/AutoCarver) —
 if it earns a place in your pipeline, a ⭐ helps others find it.
 
-Full challenge code: `github.com/…/caa-challenge-frequency` (this repo) ·
+Full challenge code: [github.com/mdefrance/caa-challenge](https://github.com/mdefrance/caa-challenge) (this repo) ·
 Runnable notebook on Kaggle: *(link pending — repo URL and Kaggle notebook are
 both blocked on the publish-target decision)*.
 
@@ -616,7 +525,7 @@ The 2025 numbers came from an unseeded search.
 
 Reproducible is not the same as representative. We measured the frequency search's
 own seed spread — same features, same 300 trials, four seeds — at **0.0101 dev log
-loss**, which is why §3.5 calls the frequency arms a draw rather than reading their
+loss**, which is why §3.4 calls the frequency arms a draw rather than reading their
 0.00055 difference as a result. **No accuracy claim in this article rests on a
 margin smaller than that**, and the two that remain (severity 2.18 %, `CHARGE`
 2.37 %) clear it by two orders of magnitude.
@@ -634,14 +543,14 @@ no leaderboard delta is claimed anywhere in this article.**
 Every number here is reproducible from released versions on PyPI — no patched
 checkout required. The repository pins a floor on `autocarver` deliberately:
 earlier releases still import and run, but they apportion a selection budget
-across feature types differently (§3.5) and rank ordinal candidate groupings
+across feature types differently (§3.4) and rank ordinal candidate groupings
 differently (§3.2). They fail silently rather than loudly — same code, different
 numbers.
 
 ---
 
 *With thanks to Crédit Agricole Assurances and ENS Challenge Data for running
-an excellent public competition, to the final-year CY Tech Data Science
-students who worked through it with us, and to Zacharie Buisson for building
+an excellent public competition, to the CY Tech Fintech students who worked
+through it with us, and to Zacharie Buisson for building
 the winning solution with me.*
 
