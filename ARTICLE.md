@@ -214,7 +214,7 @@ Carving a multi-gigabyte dataset was the slowest step of our 2025 loop —
 every re-run of the feature pipeline cost real competition time.
 
 ```python
-# AutoCarver 7.7.2
+# AutoCarver 7.7.3
 from AutoCarver import OrdinalCarver
 from AutoCarver.discretizers import ProcessingConfig
 
@@ -263,7 +263,7 @@ Kendall's tau-c (tau-b and Somers' D are available too). The change is one
 line:
 
 ```python
-# AutoCarver 7.7.2
+# AutoCarver 7.7.3
 from AutoCarver import OrdinalCarver   # 2025 used MulticlassCarver, i.e. one-vs-rest
 
 carver = OrdinalCarver(features=features, min_freq=0.02, max_n_mod=5)
@@ -469,7 +469,7 @@ None of these is claimed to have done anything for this challenge.
 Ten lines against any binary target — here, the Titanic:
 
 ```python
-# AutoCarver 7.7.2
+# AutoCarver 7.7.3
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from AutoCarver import BinaryCarver, Features
@@ -505,7 +505,7 @@ Every number in §3 comes from four notebook runs on **one machine, serialized**
 | GPU | GTX 1650 Max-Q — XGBoost runs `device="cuda"` |
 | Python | 3.11.7 |
 | **2025 arm** | AutoCarver **7.0.5**, scikit-learn 1.9.0, numpy 2.0.2, **single-process** |
-| **2026 arm** | AutoCarver **7.7.2**, scikit-learn 1.8.0, numpy 2.4.6, xgboost 3.2.0, optuna 4.9.0, **`n_jobs=6`**, Optuna seeded (`TPESampler(seed=42)`) |
+| **2026 arm** | AutoCarver **7.7.3**, scikit-learn 1.8.0, numpy 2.4.6, xgboost 3.2.0, optuna 4.9.0, **`n_jobs=6`**, Optuna seeded (`TPESampler(seed=42)`) |
 | XGBoost / Optuna | 3.2.0 / 4.9.0 — 300 trials (frequency), 400 (severity), identical between eras |
 
 Known differences beyond the carver, stated so you can discount them yourself:

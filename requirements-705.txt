@@ -1,6 +1,6 @@
 # AutoCarver 7.0.5 environment -- the 2025 arm.
 #
-# The current line (pyproject.toml, autocarver>=7.7.2) is not API-compatible with 7.0.5,
+# The current line (pyproject.toml, autocarver>=7.7.3) is not API-compatible with 7.0.5,
 # so the two 2025 timing-baseline notebooks need their own interpreter. This is a full
 # freeze of the environment the article's 2025 wall-clocks were actually measured in, not
 # a floor: `pip install "autocarver==7.0.5"` today resolves a different scikit-learn and

@@ -1,3 +1,4 @@
+import json
 import os
 import warnings
 
@@ -32,15 +33,24 @@ def _resolve_xgb_device() -> str:
     if not xgboost.build_info().get("USE_CUDA", False):
         return "cpu"
 
-    # A CUDA-enabled build still needs a visible device at run time; the cheapest honest
-    # test is a one-tree fit, which raises rather than warns from XGBoost 2.1 on.
+    # A CUDA-enabled build still needs a visible device at run time, and asking for one
+    # that is not there is not an error in XGBoost: it warns ("No visible GPU is found,
+    # setting device to CPU"), silently falls back, and trains anyway. A try/except around
+    # a probe fit therefore succeeds on a CPU-only machine and hands back "cuda", which
+    # then warns twice per Optuna trial for the rest of the run.
+    #
+    # So the probe fits one tree and asks the booster which device it *actually* used.
+    # That is the resolved value after any fallback, and it does not depend on the wording
+    # of a warning. Warnings are silenced here rather than escalated for the same reason:
+    # the answer comes from the config, not from whether something was printed.
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            XGBClassifier(device="cuda", n_estimators=1, verbosity=0).fit(
-                np.zeros((4, 1)), np.array([0, 1, 0, 1])
-            )
-        return "cuda"
+            probe = XGBClassifier(device="cuda", n_estimators=1, verbosity=0)
+            probe.fit(np.zeros((4, 1)), np.array([0, 1, 0, 1]))
+        config = json.loads(probe.get_booster().save_config())
+        resolved = config["learner"]["generic_param"]["device"]
+        return "cuda" if resolved.startswith("cuda") else "cpu"
     except Exception:  # pylint: disable=broad-except
         return "cpu"
 

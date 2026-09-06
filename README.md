@@ -60,9 +60,8 @@ src/
   frequency_model_2026_ordinal_selector.ipynb
                                      # negative result: the frequency arm re-selected with
                                      #   OrdinalSelector instead of ClassificationSelector
-  utils/
-    data_toolkit.py                  # feature engineering / processing helpers
-    objectives.py                    # Optuna objectives, IsolationForest outlier handling
+  data_toolkit.py                    # feature engineering / processing helpers
+  objectives.py                      # Optuna objectives, IsolationForest outlier handling
   model/                             # generated artifacts (gitignored, bar two ~2 kB carvers)
 data/
   README.md                          # how to download the challenge data (not tracked here)
@@ -99,9 +98,14 @@ uv sync
    `Processor(data_dir="/kaggle/input/…")` — which is the easier route in a hosted
    notebook, where an environment variable would have to be set before the import.
 2. **Run the notebooks with `src/` as the working directory** — they resolve data
-   as `../data/` and import `utils.*` relative to themselves. From a shell:
-   `cd src && uv run jupyter lab`, or point your editor's kernel at `src/`.
-   `CAA_DATA_DIR` overrides the data location.
+   as `../data/` and import `data_toolkit` / `objectives` as top-level modules
+   sitting beside them. From a shell: `cd src && uv run jupyter lab`, or point
+   your editor's kernel at `src/`. `CAA_DATA_DIR` overrides the data location.
+
+   The flat layout is deliberate. Hosted notebooks — Kaggle, Colab — have no
+   package structure to import through, so keeping the helpers as plain modules
+   next to the notebooks means the same two import lines work here and there;
+   only the data path changes.
 3. Run the **frequency** notebook end to end — it writes the intermediates the
    severity model needs (`data/frequency_*.csv`, `data/oos_frequency_*.csv`) and
    fits the target carver that defines the severity split.
@@ -111,7 +115,7 @@ uv sync
 ### Hardware
 
 The measured runs used an NVIDIA GPU, and XGBoost trains on `device="cuda"`
-whenever one is available. `src/utils/objectives.py` probes for it once at
+whenever one is available. `src/objectives.py` probes for it once at
 import and falls back to `"cpu"` if there is none, so the notebooks run either
 way — CPU is slower and XGBoost's histogram construction is not bit-identical
 across devices, so a CPU run reproduces the pipeline but not the last digits.
@@ -145,7 +149,7 @@ them against that interpreter.
 ## Reproducing the article's numbers
 
 The dependency floor is deliberate: `pyproject.toml` pins
-`autocarver[jupyter]>=7.7.2`. Older releases still import and run, but they
+`autocarver[jupyter]>=7.7.3`. Older releases still import and run, but they
 apportion the selection budget differently and rank ordinal candidate groupings
 differently, so they quietly produce a different feature mix and different
 numbers rather than raising anything. Pin the floor and the notebooks reproduce

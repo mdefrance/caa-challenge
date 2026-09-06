@@ -58,7 +58,7 @@ wheels = [
 
 [[package]]
 name = "autocarver"
-version = "7.7.2"
+version = "7.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
@@ -68,9 +68,9 @@ dependencies = [
     { name = "statsmodels" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/55/0f/b1f4b7aa632b3d0e848ae3d680397eaa3b23c10626147ff74e6c15d2e20b/autocarver-7.7.2.tar.gz", hash = "sha256:d27e4b7ee680541f1e39af39fb7cd5163eddbc0f3d3bb4e578157eca586566a9", size = 171574, upload-time = "2026-08-30T15:24:24.93Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/67/10/41539d28bec90957eda7a1343e92b1ae437291d560a6102087615fdc5fd8/autocarver-7.7.3.tar.gz", hash = "sha256:a6f7fb7570508ec519d4a592c462e10ba5909af22b42a426040ac8ffb720672d", size = 171754, upload-time = "2026-09-06T13:51:23.87Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/cd/762836b4c81bf5211759858cb6c9185dfa49a6a70d05b7f334d4ca1e9e90/autocarver-7.7.2-py3-none-any.whl", hash = "sha256:6a3fe6479f46dd71e116c112835f4ba3ef52c04ed5a43bfbd93a1e3d228255bc", size = 226898, upload-time = "2026-08-30T15:24:23.225Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/fc/c5152c8c21f7eebc08714197ece3cdfb34101f5c9d1270c924f77801fb21/autocarver-7.7.3-py3-none-any.whl", hash = "sha256:dad8fb4292672b8eed03e1603d48cdb1806144c0f6f58b2d1d7d86ce710ed08e", size = 227061, upload-time = "2026-09-06T13:51:22.455Z" },
 ]
 
 [package.optional-dependencies]
@@ -168,7 +168,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autocarver", extras = ["jupyter"], specifier = ">=7.7.2" },
+    { name = "autocarver", extras = ["jupyter"], specifier = ">=7.7.3" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
     { name = "jinja2", specifier = ">=3.1.5" },

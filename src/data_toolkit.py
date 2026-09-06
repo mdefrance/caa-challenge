@@ -692,7 +692,7 @@ surface_over_forest = {
 # data directory, resolved relative to this file so any checkout works; override with the
 # CAA_DATA_DIR environment variable. See data/README.md for the downloads.
 DATA_DIR = Path(
-    os.environ.get("CAA_DATA_DIR", Path(__file__).resolve().parents[2] / "data")
+    os.environ.get("CAA_DATA_DIR", Path(__file__).resolve().parents[1] / "data")
 )
 
 

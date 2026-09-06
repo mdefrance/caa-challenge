@@ -53,7 +53,7 @@ def main():
     )
 
     import optuna
-    from utils.objectives import get_best_multiclass_model, get_multiclass_objective
+    from objectives import get_best_multiclass_model, get_multiclass_objective
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     x_train, x_dev = g["x_train"], g["x_dev"]
