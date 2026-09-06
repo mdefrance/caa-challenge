@@ -1,4 +1,7 @@
-# Stop losing accuracy to manual binning: how we won an insurance data challenge by automating the quiet work of feature engineering
+# Stop losing accuracy to manual binning
+
+*How we won an insurance data challenge by automating the quiet work of feature
+engineering — and what a year of library releases actually bought when we re-ran it.*
 
 <!-- When this is cross-posted, set the platform copy's canonical URL to whichever
      version is the original. This file is the source of record. -->
@@ -27,22 +30,19 @@ handful of policies. Nobody picked that cut, and nobody had to defend it in a
 meeting.
 
 Do that for four hundred features and you have the quiet half of a winning
-model — the half most pipelines leave to a default `qcut`, or to whoever last
-had an opinion.
+model — the half most pipelines settle with a default `qcut` and never revisit.
 
-It took us to **first place** in the public [Crédit Agricole Assurances
-challenge on insurance claim
-prediction](https://challengedata.ens.fr/challenges/161). And when we re-ran
-the pipeline a year later with today's tooling, **one config argument turned
-47 minutes of carving into 2, and 79 minutes into 2.3** — while the end-to-end
-metric improved. The rest of this article is how — and, just as
-honestly, which shiny new features changed nothing at all.
+It took us to **first place** in the Crédit Agricole Assurances Data Science Academy
+hackathon, out of more than 500 participants [6], run on the public [ENS *Challenge Data*
+claim-prediction problem](https://challengedata.ens.fr/challenges/161) [1] — and it doubled
+as the running example in the course we taught to the Fintech students at CY Tech.
 
-## TL;DR
+When we re-ran the pipeline a year later with today's tooling, **multiprocessing and a new
+search algorithm turned 133 minutes of carving into 4.3** — while the end-to-end metric
+improved. The rest of this article is how, and, just as honestly, which shiny new features
+changed nothing at all.
 
-Last year, Zacharie Buisson and I finished **first** in the CAA challenge —
-while using it as the running example in the course we taught to the Fintech
-students at CY Tech.
+## The recipe, in three decisions
 
 No giant model, no ensemble of ensembles. Three decisions did the work:
 
@@ -56,10 +56,6 @@ No giant model, no ensemble of ensembles. Three decisions did the work:
 A year later, AutoCarver has grown a lot. So we re-ran the challenge with the
 current version and measured what each new feature is actually worth. The
 numbers — including the ones that say "no difference" — are below.
-
-```bash
-pip install autocarver
-```
 
 ---
 
@@ -109,6 +105,18 @@ on bins per feature, and (crucially) **validation on a held-out dev set**, so
 a grouping that only works on train is rejected outright. Declare your feature
 types once, carve everything in one `fit`:
 
+**A word on [optbinning](https://github.com/guillermo-navas-palencia/optbinning)**, the
+obvious alternative [5] — and, on this challenge, a proven one: it turned up in other
+strong solutions when the teams presented at Crédit Agricole Assurances. It solves the binning problem to *proven* optimality with a
+CP/MILP formulation rather than by heuristic search, and its binning tables report IV,
+Jensen–Shannon and per-bin p-values.
+
+We went a different way for reasons that are about how we framed the problem, not about the
+library. We wanted every grouping tested on a held-out sample, and `fit(x, y)` has no notion
+of one. Our claim-count target is ordered — `0 < 1 < 2+` — where `MulticlassOptimalBinning`
+treats the classes as unordered (§3.2). And its multiclass path is numerical-only, while most
+of our 435 features are categorical or declared ordinals. Different route, same podium.
+
 ```python
 # AutoCarver 7.0.5, as written in 2025. Do not paste this into a current project —
 # see §3 for the current equivalent, and the note below on MulticlassCarver.
@@ -121,8 +129,7 @@ features = Features(
 )
 
 carver = MulticlassCarver(features=features, min_freq=0.02, max_n_mod=5)
-train_carved = carver.fit_transform(train, train["n_claims"],
-                                    X_dev=dev, y_dev=dev["n_claims"])
+train_carved = carver.fit_transform(train, train["n_claims"], X_dev=dev, y_dev=dev["n_claims"])
 
 carver.summary  # every bucket: frequency, target rate, association
 ```
@@ -177,7 +184,7 @@ pruned features was itself a hyper-parameter** — Optuna decided how
 aggressively to trim, jointly with depth, learning rate and regularisation.
 
 Factor the problem, carve the features, weight the rare signal, tune the
-pruning. **1st place.**
+pruning. **1st place in the hackathon.**
 
 ## 3. Re-running it with today's AutoCarver (2026)
 
@@ -218,8 +225,7 @@ every re-run of the feature pipeline cost real competition time.
 from AutoCarver import OrdinalCarver
 from AutoCarver.discretizers import ProcessingConfig
 
-carver = OrdinalCarver(features=features, min_freq=0.02, max_n_mod=5,
-                       config=ProcessingConfig(n_jobs=6))
+carver = OrdinalCarver(features=features, min_freq=0.02, max_n_mod=5, config=ProcessingConfig(n_jobs=6))
 ```
 
 Carving wall-clock, 7.0.5 vs today, on the full dataset — 383,610 rows, ~435
@@ -252,7 +258,7 @@ that.
 
 Faster carving isn't a vanity metric: it means more iterations of the
 feature/model loop inside the same competition window. In 2025, one full carve
-of both pipelines cost over two hours; it now costs four and a half minutes.
+of both pipelines cost over two hours; it now costs just over four minutes.
 
 ### 3.2 The right target geometry: `OrdinalCarver`
 
@@ -365,9 +371,9 @@ Overall, end to end:
 
 | Metric | 2025 (7.0.5) | 2026 (current) | |
 |---|---|---|---|
-| Frequency — dev log loss | **0.9194** *(0.9134 tuned)* | 0.9199 | **indistinguishable** — see below |
-| Severity — dev RMSE | **6613.8** *(6610.1)* | **6469.7** | ⬆ **2.18 % better** |
-| **`CHARGE` — dev RMSE** *(the challenge metric)* | **6639.9** | **6482.8** | ⬆ **2.37 % better** |
+| Frequency — dev log loss | **0.9194** | 0.9199 | **indistinguishable** — see below |
+| Severity — dev RMSE | 6613.8 | **6469.7** | ⬆ **2.18 % better** |
+| **`CHARGE` — dev RMSE** *(the challenge metric)* | 6639.9 | **6482.8** | ⬆ **2.37 % better** |
 
 **That top row is not a result, and it took a deliberate experiment to find out.**
 
@@ -421,27 +427,6 @@ signal. Severity is heavy-tailed and continuous, and carved qualitative features
 help it. An even split is a compromise, not an optimum on either side — worth
 knowing before you accept whatever apportionment your selector happens to use.
 
-## 4. Takeaways — and the same questions, back to you
-
-Earlier we asked how you'd handle a signal this rare. Here's our answer,
-condensed — hold it against yours:
-
-- **Factor the problem.** Frequency × severity beats one monolithic model on
-  insurance data, and each half is easier to debug. *Does your problem have a
-  natural factorisation you're currently ignoring?*
-- **Bin like you mean it.** Supervised, association-maximising, dev-validated
-  binning gave us more lift than any amount of model tuning. It's also the
-  only part of the pipeline a regulator or a reviewer can *read*. *Who — or
-  what — decides where your features get cut today?*
-- **Weight the rare signal** — in the loss (class weights) and across stages
-  (error-weighted severity). *Where does your pipeline silently let the
-  majority class win?*
-- **Tooling compounds.** A year of releases turned our manual steps into
-  one-liners and the slow step into a fast one. Pick tools that keep moving.
-
-If your answers differ from ours, that's the interesting part — the
-comparison is the takeaway.
-
 ## Also shipped since 7.0.5, and not exercised here
 
 Some capabilities landed in the library that this dataset gave us no honest way
@@ -464,9 +449,15 @@ to test, so they get a mention rather than a row in the scoreboard:
 
 None of these is claimed to have done anything for this challenge.
 
-## Try it on your own features
+## The smallest complete example
 
-Ten lines against any binary target — here, the Titanic:
+Ten lines against any binary target — here, the Titanic. The line doing the work is
+`fit_transform(..., X_dev=dev, y_dev=dev["Survived"])`: every grouping has to hold on the
+held-out sample or it is rejected, which is the whole argument of §2.1 in one call.
+
+```bash
+pip install autocarver
+```
 
 ```python
 # AutoCarver 7.7.3
@@ -477,24 +468,43 @@ from AutoCarver import BinaryCarver, Features
 data = pd.read_csv("titanic.csv")
 train, dev = train_test_split(data, test_size=0.33, stratify=data["Survived"], random_state=42)
 
-features = Features(categoricals=["Sex"], numericals=["Age", "Fare"],
-                    ordinals={"Pclass": ["1", "2", "3"]})
+features = Features(categoricals=["Sex"], numericals=["Age", "Fare"], ordinals={"Pclass": ["1", "2", "3"]})
 carver = BinaryCarver(features=features, min_freq=0.05, max_n_mod=5)
 train_carved = carver.fit_transform(train, train["Survived"], X_dev=dev, y_dev=dev["Survived"])
-print(carver.summary)   # your features, as auditable buckets
+carver.summary   # your features, as auditable buckets
 ```
 
-Docs and worked notebooks: [autocarver.readthedocs.io](https://autocarver.readthedocs.io) ·
-Source: [github.com/mdefrance/AutoCarver](https://github.com/mdefrance/AutoCarver) —
-if it earns a place in your pipeline, a ⭐ helps others find it.
+## 4. Takeaways — and the same questions, back to you
 
-Full challenge code: [github.com/mdefrance/caa-challenge](https://github.com/mdefrance/caa-challenge) (this repo) ·
-Runnable on Kaggle, against the mirrored challenge data:
-[frequency model](https://www.kaggle.com/code/mariodefrance/caa-frequency-model) ·
-[severity model](https://www.kaggle.com/code/mariodefrance/caa-amount-model) ·
-[dataset](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025) — mirrored
-under the Etalab Licence Ouverte 2.0, which is what ENS *Challenge Data* Study Data
-carries by default.
+Earlier we asked how you'd handle a signal this rare. Here's our answer,
+condensed — hold it against yours:
+
+- **Factor the problem.** Frequency × severity beats one monolithic model on
+  insurance data, and each half is easier to debug. *Does your problem have a
+  natural factorisation you're currently ignoring?*
+- **Bin like you mean it.** Supervised, association-maximising, dev-validated
+  binning gave us more lift than any amount of model tuning. It's also the
+  only part of the pipeline a regulator or a reviewer can *read*. *Who — or
+  what — decides where your features get cut today?*
+- **Weight the rare signal** — in the loss (class weights) and across stages
+  (error-weighted severity). *Where does your pipeline silently let the
+  majority class win?*
+- **Tooling compounds.** A year of releases turned our manual steps into
+  one-liners and the slow step into a fast one. Pick tools that keep moving.
+
+If your answers differ from ours, that's the interesting part — the
+comparison is the takeaway.
+
+## Everything behind this article
+
+- **The code**, with every notebook stored alongside the outputs that produced these
+  numbers — [github.com/mdefrance/caa-challenge](https://github.com/mdefrance/caa-challenge)
+- **Run it without installing anything** — the
+  [frequency](https://www.kaggle.com/code/mariodefrance/caa-frequency-model) and
+  [severity](https://www.kaggle.com/code/mariodefrance/caa-amount-model) notebooks on Kaggle,
+  against a [mirror of the challenge data](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025)
+- **AutoCarver** — [docs and worked notebooks](https://autocarver.readthedocs.io) ·
+  [source](https://github.com/mdefrance/AutoCarver)
 
 ---
 
@@ -511,6 +521,7 @@ Every number in §3 comes from four notebook runs on **one machine, serialized**
 | **2025 arm** | AutoCarver **7.0.5**, scikit-learn 1.9.0, numpy 2.0.2, **single-process** |
 | **2026 arm** | AutoCarver **7.7.3**, scikit-learn 1.8.0, numpy 2.4.6, xgboost 3.2.0, optuna 4.9.0, **`n_jobs=6`**, Optuna seeded (`TPESampler(seed=42)`) |
 | XGBoost / Optuna | 3.2.0 / 4.9.0 — 300 trials (frequency), 400 (severity), identical between eras |
+| Data | ENS *Challenge Data* #161 [1], plus a BDIFF fire-history extract [3] joined in as extra features. Both are Etalab Licence Ouverte 2.0; the exact extract behind these numbers is mirrored on Kaggle |
 
 Known differences beyond the carver, stated so you can discount them yourself:
 the 2026 arm selects features with the current library's **default measures**
@@ -542,7 +553,9 @@ of their own. Neither is reproduced here (§3). Same pipeline, fewer candidates.
 **The dev set is selection-contaminated** — 400 trials chose against it — so dev
 `CHARGE` RMSE is optimistic rather than held out; train and dev are reported
 together so the gap is visible. **The ENS leaderboard cannot be re-submitted, so
-no leaderboard delta is claimed anywhere in this article.**
+no leaderboard delta is claimed anywhere in this article.** The placement above is
+the CAA hackathon's [6]; the ENS platform ranks the same problem separately and on
+its own calendar, and the two are not the same scoreboard.
 
 Every number here is reproducible from released versions on PyPI — no patched
 checkout required. The repository pins a floor on `autocarver` deliberately:
@@ -550,6 +563,28 @@ earlier releases still import and run, but they apportion a selection budget
 across feature types differently (§3.4) and rank ordinal candidate groupings
 differently (§3.2). They fail silently rather than loudly — same code, different
 numbers.
+
+---
+
+## References
+
+[1] Crédit Agricole Assurances, *AssurPrime : Saurez-vous prédire la prime d'assurance ?*
+(2025), ENS Challenge Data #161 — https://challengedata.ens.fr/challenges/161
+
+[2] M. Defrance, *AutoCarver* (2026), PyPI / GitHub —
+https://github.com/mdefrance/AutoCarver
+
+[3] Institut national de l'information géographique et forestière, *Base de Données sur les
+Incendies de Forêts en France (BDIFF)* (2025), Ministère de l'Agriculture et de la
+Souveraineté Alimentaire — https://bdiff.agriculture.gouv.fr
+
+[4] Anthropic, *Model Context Protocol* (2024) — https://modelcontextprotocol.io
+
+[5] G. Navas-Palencia, *OptBinning: The Python Optimal Binning library* (2025), v0.21.0 —
+https://github.com/guillermo-navas-palencia/optbinning
+
+[6] M. Couillaud, *Retour sur le hackathon de la Data Science Academy* (2025), LinkedIn —
+https://www.linkedin.com/posts/myriam-couillaud-6885012_data-ia-innovation-activity-7343893386023649281-w-qQ
 
 ---
 
