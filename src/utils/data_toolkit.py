@@ -145,13 +145,32 @@ def get_region(departement_code):
 
 
 class Processor(BaseEstimator, TransformerMixin):
-    def __init__(self):
+    """Feature engineering for both pipelines.
+
+    `data_dir` is where the auxiliary `Incendies.csv` is read from. Leave it None and it
+    falls back to the module-level DATA_DIR, which is the repository's own `data/` unless
+    CAA_DATA_DIR overrides it -- so nothing changes for the notebooks. Pass it explicitly
+    where the file lives somewhere else and setting an environment variable before the
+    import would be awkward:
+
+        proc = Processor(data_dir="/kaggle/input/caa-challenge-data")
+
+    It is stored unresolved, per scikit-learn's rule that __init__ only records its
+    arguments; `resolve_data_dir()` does the fallback at call time.
+    """
+
+    def __init__(self, data_dir: str | Path | None = None):
         self.log_means = None
         self.log_vetuste_means = None
         self.men_means = None
         self.ind_means = None
         self.ind_snv_means = None
         self.altitude_means = None
+        self.data_dir = data_dir
+
+    def resolve_data_dir(self) -> Path:
+        """The directory to read auxiliary data from: the argument, else DATA_DIR."""
+        return Path(self.data_dir) if self.data_dir is not None else DATA_DIR
 
     def fit(self, data):
         x = data.copy()
@@ -219,7 +238,7 @@ class Processor(BaseEstimator, TransformerMixin):
         data = one_hot_encode(data)
 
         # adding fire data
-        data = add_incendies_info(data)
+        data = add_incendies_info(data, data_dir=self.resolve_data_dir())
         data["VENT_x_CASERNES"] = (
             data["ZONE_VENT"].astype(str) + "__" + data["NB_CASERNES"]
         )
@@ -677,12 +696,22 @@ DATA_DIR = Path(
 )
 
 
-@lru_cache(maxsize=1)
-def get_incendies_natures() -> pd.DataFrame:
-    """fire-incident counts per zone, loaded on first use rather than at import"""
+def get_incendies_natures(data_dir: str | Path | None = None) -> pd.DataFrame:
+    """fire-incident counts per zone, loaded on first use rather than at import.
+
+    The fallback is applied here rather than inside the cached function, so that None and
+    an explicit DATA_DIR are one cache entry instead of two loads of the same file.
+    """
+    directory = Path(data_dir) if data_dir is not None else DATA_DIR
+    return _incendies_natures(directory)
+
+
+@lru_cache(maxsize=4)
+def _incendies_natures(directory: Path) -> pd.DataFrame:
+    """The uncached-once-per-directory body. Keyed on the resolved path."""
 
     # getting data about fires
-    incendies = pd.read_csv(DATA_DIR / "Incendies.csv", sep=",")
+    incendies = pd.read_csv(directory / "Incendies.csv", sep=",")
 
     # formatting zone
     incendies["zone"] = incendies["Département"].apply(
@@ -707,8 +736,10 @@ def get_incendies_natures() -> pd.DataFrame:
     return pd.DataFrame(new_incendies_natures)
 
 
-def add_incendies_info(data: pd.DataFrame) -> pd.DataFrame:
-    """adds incendies info to the dataset"""
+def add_incendies_info(
+    data: pd.DataFrame, data_dir: str | Path | None = None
+) -> pd.DataFrame:
+    """adds incendies info to the dataset; data_dir defaults to DATA_DIR"""
 
     data["total_surface_2023"] = data["ZONE"].map(total_surface_2023).fillna("<10ha")
     data["total_surface_5y"] = data["ZONE"].map(total_surface_5y).fillna(">200ha")
@@ -727,7 +758,9 @@ def add_incendies_info(data: pd.DataFrame) -> pd.DataFrame:
     )
 
     # adding to dataset
-    data = data.join(get_incendies_natures().fillna(0).set_index("zone"), on="ZONE")
+    data = data.join(
+        get_incendies_natures(data_dir).fillna(0).set_index("zone"), on="ZONE"
+    )
 
     return data
 

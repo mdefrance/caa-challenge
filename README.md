@@ -94,7 +94,10 @@ uv sync
 ```
 
 1. Download the challenge data into `data/` — see [`data/README.md`](data/README.md).
-   Four files are needed, including `Incendies.csv`.
+   Four files are needed, including `Incendies.csv`. To read them from somewhere else,
+   set `CAA_DATA_DIR`, or pass the directory straight to the transformer —
+   `Processor(data_dir="/kaggle/input/…")` — which is the easier route in a hosted
+   notebook, where an environment variable would have to be set before the import.
 2. **Run the notebooks with `src/` as the working directory** — they resolve data
    as `../data/` and import `utils.*` relative to themselves. From a shell:
    `cd src && uv run jupyter lab`, or point your editor's kernel at `src/`.
