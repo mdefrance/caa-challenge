@@ -1,13 +1,17 @@
-# Crédit Agricole Assurances — Claim Frequency & Severity Challenge (1st place)
+# Crédit Agricole Assurances — Claim Frequency & Severity Challenge (1st place, CAA hackathon)
 
-Winning solution to the public [ENS *Challenge Data* #161](https://challengedata.ens.fr/challenges/161),
-hosted by **Crédit Agricole Assurances**, on predicting insurance **claim
+Hackathon-winning solution to the public [ENS *Challenge Data* #161](https://challengedata.ens.fr/challenges/161)
+problem, run by **Crédit Agricole Assurances**, on predicting insurance **claim
 frequency** and **claim severity (amount)** — plus a full re-run of the same
 pipeline a year later on the current [AutoCarver](https://github.com/mdefrance/AutoCarver),
 with every number measured on one machine.
 
-**Authors:** Mario Defrance & Zacharie Buisson — finished **1st** on the
-challenge. The challenge was used as a teaching vehicle in the **Data Science**
+**Authors:** Mario Defrance & Zacharie Buisson — finished **1st** in the Crédit
+Agricole Assurances *Data Science Academy* hackathon, out of more than 500 participants.
+The hackathon ran on ENS *Challenge Data* #161 and was ranked on that platform's private
+leaderboard as it stood when the hackathon closed in spring 2025; results were presented
+that June. The challenge itself is still open to submissions, so the live leaderboard is
+a later snapshot. The challenge was used as a teaching vehicle in the **Data Science**
 course we taught to the final-year **Fintech** students at **CY Tech**.
 
 The approach is a classic actuarial **frequency–severity decomposition**, with
@@ -15,9 +19,9 @@ all feature engineering and supervised binning handled by the open-source
 [**AutoCarver**](https://github.com/mdefrance/AutoCarver) library and the final
 models built with XGBoost tuned via Optuna.
 
-> 📝 **The article lives here too — [`ARTICLE.md`](ARTICLE.md).** *"Stop losing
-> accuracy to manual binning"* walks through the method and revisits it with the
-> current library. Every figure it quotes was measured on the notebooks in this
+> 📝 **The article lives here too — [`ARTICLE.md`](ARTICLE.md).** *"We re-ran our
+> winning insurance model a year later"* walks through the method and revisits it with
+> the current library. Every figure it quotes was measured on the notebooks in this
 > repository, on one machine, with nothing else running, and every measurement
 > has a script here that regenerates it.
 
@@ -27,7 +31,7 @@ models built with XGBoost tuned via Optuna.
 - Target: number of claims per policy (multiclass `0` / `1` / `2+`,
   derived from `FREQ × ANNEE_ASSURANCE`).
 - Stratified train/dev split; **inverse-frequency class weighting** to handle
-  the rarity of claims (0.69 % positive rate).
+  the rarity of claims (mean claim count 0.69 %; 0.66 % of policies have any).
 - Supervised binning of quantitative, qualitative and ordinal features with
   **AutoCarver** — 2025 used `MulticlassCarver` (one-vs-rest), the 2026 re-run
   uses `OrdinalCarver`, since `0 < 1 < 2+` is ordered.
