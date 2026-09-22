@@ -20,8 +20,9 @@ band's share of the portfolio below](docs/hero_SURFACE4.svg)
 *Tschuprow's T with the target, on held-out data: 0.0240 across the sixteen raw levels,
 0.0358 across the two buckets — a 1.49× rise.*
 
-That is one real feature from the challenge data. Floor area comes in sixteen bands, claim
-frequency climbs roughly tenfold across them, and supervised binning cuts them **in two, at
+That is one real feature from the challenge data — anonymised French farm policies, priced
+against **fire**. Floor area comes in sixteen bands, claim frequency climbs roughly tenfold
+across them, and supervised binning cuts them **in two, at
 1000 m²** — not for want of finer options, since ten of the bands clear the 2 % `min_freq`
 floor, but because the carver's association measure ranked this cut above all of them
 (`tools/make_hero_chart.py --explain`). The lower panel is about trust: every band from
@@ -31,7 +32,7 @@ that for 400 features and you have the quiet half of a winning model — the hal
 most pipelines settle with a `qcut`.
 
 It took us to **first place** in the Crédit Agricole Assurances *Data Science Academy*
-hackathon [6], out of more than 500 participants, ranked on the private leaderboard of the
+hackathon [5], out of more than 500 participants, ranked on the private leaderboard of the
 public [ENS *Challenge Data* #161](https://challengedata.ens.fr/challenges/161) [1] as it
 stood when the hackathon closed in spring 2025. That challenge is still open, so the live
 leaderboard has moved on and nothing here is a leaderboard score. It doubled as the running
@@ -47,6 +48,26 @@ that audit: four seeds per arm, every margin measured against its own spread, an
 feature set held constant to separate two steps we had always run together.
 
 ## 1. The problem
+
+The policies are French farms. Challenge #161 is **AssurPrime**: *Contrat Multirisque
+Agricole* cover, written by Crédit Agricole Assurances' property-and-casualty carrier
+Pacifica, and the peril being priced is **fire**, which the challenge states is a large
+share of that contract's claims [1]. Barns, machinery, stock.
+
+So a second dataset is joined in. `src/data_toolkit.py::add_wildfire_features` attaches a
+wildfire-exposure profile per geographic zone from **BDIFF**, France's national forest-fire
+database [3]: burnt area, burnt area over forest, extinction rates and fire counts by
+cause, crossed with the zone's fire-station count and wind zone. The extract is real and
+substantial — **23,462 fires across 93 departments, 145,309 ha burnt over 2016–2023**.
+
+The peril is the reason to care. The IPCC assesses that fire hazard conditions rose
+across Europe from 1980 to 2019, with substantive increases in Western and Central Europe
+— *high confidence* — and that wildfire risk can rise in every European region between
+1.5 °C and 3 °C of warming, *medium to high confidence* [6]. Swiss Re puts 2025 insured
+natural-catastrophe losses at USD 107 bn and calls wildfire the fastest-growing line, near
+12 % a year [7]. That is the pressure this pricing sits under, and **none of it is a
+finding of this model**: we hold one snapshot, run no temporal analysis, and detect,
+forecast and map nothing. The trend is why the question is live; it is not our answer.
 
 Insurers don't predict "will this policy have a claim and how much" in one shot. They
 factor it, as actuaries have for decades:
@@ -108,7 +129,7 @@ columns; that behaviour is `OneVsRestCarver` now. Every snippet in §2 is 2025 c
 written; §3 is the current API.
 
 **A word on [optbinning](https://github.com/guillermo-navas-palencia/optbinning).** The
-obvious alternative [5]: where we search groupings heuristically, it states the merge of
+obvious alternative [4]: where we search groupings heuristically, it states the merge of
 CART prebins as a CP/MILP problem and solves that exactly, inside a time limit. We went a
 different way for three reasons about our framing, not the library: we wanted every
 grouping tested on a held-out sample, and `fit(x, y)` has no notion of one; our target is ordered,
@@ -205,12 +226,6 @@ on 210 of 364 features and wins 111 to 43 on the rest (two-sided sign test, p �
 reliable direction, a small size: +0.000107 mean tau-c. Declare your ordinals. No arm here
 was carried through selection and tuning, so none of it claims an effect on the final
 metric.
-
-Three other releases went untested for want of an honest test on this data
-(`DatetimeFeature`, `NestedFeature`, Wilson-score bucket testing, which on 306,888 rows
-changed one bucket), and a local [MCP](https://modelcontextprotocol.io) [4] server now
-proposes feature declarations from the CSV, which we have not re-qualified this dataset
-through.
 
 ### 3.3 So, did it actually win harder?
 
@@ -392,12 +407,12 @@ Every number in §3 comes from four notebook runs on **one machine, serialised**
 | XGBoost / Optuna | 3.2.0 / 4.9.0 — 300 trials (frequency), 400 (severity), identical between eras |
 | Data | ENS *Challenge Data* #161 [1] plus a BDIFF fire-history extract [3], both Etalab Licence Ouverte 2.0; the exact extract is mirrored on Kaggle |
 
-**Known differences beyond the carver**, so you can discount them yourself: the 2026 arm
-selects with the current library's **default measures** rather than the 2025 thresholds; it
-carves severity at `min_freq=0.02` where 2025 used `0.03`; scikit-learn and numpy differ by
-a minor version; and 2025 fed both models a wider candidate set, carving the quantitative
-features twice and re-offering the frequency model's carved columns to the severity model.
-The wall-clock comparison is unaffected.
+**Known differences beyond the carver**, to discount yourself: the 2026 arm selects with
+the library's **default measures**, not the 2025 thresholds; it carves severity at
+`min_freq=0.02` where 2025 used `0.03`; scikit-learn and numpy differ by a minor version;
+and 2025 fed both models a wider candidate set — quantitative features carved twice, the
+frequency model's carved columns re-offered to severity. The wall-clock comparison is
+unaffected.
 
 **The 2026 arm is seeded and the 2025 baseline is not.** The 2026 Optuna search adds
 `TPESampler(seed=42)`; the 2025 numbers came from an unseeded search. Reproducible is not
@@ -430,13 +445,19 @@ https://github.com/mdefrance/AutoCarver
 Incendies de Forêts en France (BDIFF)* (2025), Ministère de l'Agriculture et de la
 Souveraineté Alimentaire — https://bdiff.agriculture.gouv.fr
 
-[4] Anthropic, *Model Context Protocol* (2024) — https://modelcontextprotocol.io
-
-[5] G. Navas-Palencia, *OptBinning: The Python Optimal Binning library* (2025), v0.21.0 —
+[4] G. Navas-Palencia, *OptBinning: The Python Optimal Binning library* (2025), v0.21.0 —
 https://github.com/guillermo-navas-palencia/optbinning
 
-[6] M. Couillaud, *Retour sur le hackathon de la Data Science Academy* (2025), LinkedIn —
+[5] M. Couillaud, *Retour sur le hackathon de la Data Science Academy* (2025), LinkedIn —
 https://www.linkedin.com/posts/myriam-couillaud-6885012_data-ia-innovation-activity-7343893386023649281-w-qQ
+
+[6] IPCC (GIEC), *Climate Change 2022: Impacts, Adaptation and Vulnerability*, ch. 13
+“Europe” (2022), Sixth Assessment Report, Working Group II —
+https://www.ipcc.ch/report/ar6/wg2/chapter/chapter-13/
+
+[7] Swiss Re Institute, *sigma 1/2026: Natural catastrophes in 2025 — the persistent rise
+of wildfire and storm risk* (2026) —
+https://www.swissre.com/institute/research/sigma-research/sigma-2026-01-natcat-2025-wildfire-storm-risk.html
 
 ---
 

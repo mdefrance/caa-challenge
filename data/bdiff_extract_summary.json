@@ -1,0 +1,28 @@
+{
+  "source": "data/Incendies.csv (BDIFF extract, Etalab Licence Ouverte 2.0)",
+  "n_fires": 23462,
+  "n_departements": 93,
+  "year_min": 2016,
+  "year_max": 2023,
+  "hectares_total": 145309.2,
+  "peak_year": 2022,
+  "hectares_peak_year": 59014.4,
+  "hectares_by_year": {
+    "2016": 14381.1,
+    "2017": 23176.0,
+    "2018": 4035.6,
+    "2019": 15190.0,
+    "2020": 11220.6,
+    "2021": 12850.5,
+    "2022": 59014.4,
+    "2023": 5441.1
+  },
+  "natures": {
+    "Unknown": 12597,
+    "Malveillance": 3532,
+    "Involontaire (particulier)": 2845,
+    "Involontaire (travaux)": 1878,
+    "Accidentelle": 1583,
+    "Naturelle": 1027
+  }
+}

@@ -238,7 +238,7 @@ class Processor(BaseEstimator, TransformerMixin):
         data = one_hot_encode(data)
 
         # adding fire data
-        data = add_incendies_info(data, data_dir=self.resolve_data_dir())
+        data = add_wildfire_features(data, data_dir=self.resolve_data_dir())
         data["VENT_x_CASERNES"] = (
             data["ZONE_VENT"].astype(str) + "__" + data["NB_CASERNES"]
         )
@@ -696,30 +696,30 @@ DATA_DIR = Path(
 )
 
 
-def get_incendies_natures(data_dir: str | Path | None = None) -> pd.DataFrame:
+def get_fire_cause_counts(data_dir: str | Path | None = None) -> pd.DataFrame:
     """fire-incident counts per zone, loaded on first use rather than at import.
 
     The fallback is applied here rather than inside the cached function, so that None and
     an explicit DATA_DIR are one cache entry instead of two loads of the same file.
     """
     directory = Path(data_dir) if data_dir is not None else DATA_DIR
-    return _incendies_natures(directory)
+    return _fire_cause_counts(directory)
 
 
 @lru_cache(maxsize=4)
-def _incendies_natures(directory: Path) -> pd.DataFrame:
+def _fire_cause_counts(directory: Path) -> pd.DataFrame:
     """The uncached-once-per-directory body. Keyed on the resolved path."""
 
     # getting data about fires
-    incendies = pd.read_csv(directory / "Incendies.csv", sep=",")
+    fires = pd.read_csv(directory / "Incendies.csv", sep=",")
 
     # formatting zone
-    incendies["zone"] = incendies["Département"].apply(
+    fires["zone"] = fires["Département"].apply(
         lambda u: str(u).zfill(2).replace("2A", "20").replace("2B", "20")
     )
 
     # getting count of event per zone
-    incendies_natures = incendies.groupby(["zone"]).apply(
+    counts_per_zone = fires.groupby(["zone"]).apply(
         lambda u: (
             pd.DataFrame(u.Nature.fillna("Unknown").value_counts())
             .to_dict()
@@ -729,17 +729,18 @@ def _incendies_natures(directory: Path) -> pd.DataFrame:
     )
 
     # creating table for joining
-    new_incendies_natures = []
-    for zone in incendies_natures.reset_index().to_dict(orient="records"):
+    rows = []
+    for zone in counts_per_zone.reset_index().to_dict(orient="records"):
         if len(zone.get("zone")) < 3:
-            new_incendies_natures += [{**zone.get(0), "zone": zone.get("zone")}]
-    return pd.DataFrame(new_incendies_natures)
+            rows += [{**zone.get(0), "zone": zone.get("zone")}]
+    return pd.DataFrame(rows)
 
 
-def add_incendies_info(
+def add_wildfire_features(
     data: pd.DataFrame, data_dir: str | Path | None = None
 ) -> pd.DataFrame:
-    """adds incendies info to the dataset; data_dir defaults to DATA_DIR"""
+    """adds the BDIFF wildfire-exposure features to the dataset;
+    data_dir defaults to DATA_DIR"""
 
     data["total_surface_2023"] = data["ZONE"].map(total_surface_2023).fillna("<10ha")
     data["total_surface_5y"] = data["ZONE"].map(total_surface_5y).fillna(">200ha")
@@ -759,7 +760,7 @@ def add_incendies_info(
 
     # adding to dataset
     data = data.join(
-        get_incendies_natures(data_dir).fillna(0).set_index("zone"), on="ZONE"
+        get_fire_cause_counts(data_dir).fillna(0).set_index("zone"), on="ZONE"
     )
 
     return data

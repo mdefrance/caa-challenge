@@ -12,11 +12,9 @@ scripts in this repository produced -- notebook outputs for the era comparisons,
     uv run --no-sync python tools/check_article_numbers.py
 """
 
-from __future__ import annotations
 
 import os
 import json
-import re
 from pathlib import Path
 
 REPO = Path(os.environ.get("CAA_REPO") or Path(__file__).resolve().parents[1])
@@ -341,6 +339,40 @@ if all(v is not None for v in {**own, **fix, **amt}.values()):
     check("§3.4 constant-predictor dev RMSE", CONST_SEV_DEV, 6617.6, 0.05)
 else:
     results.append((False, "FAIL  ablation arms missing -- run tools/ablation_matrix.py"))
+
+# --- section 1: the peril and the BDIFF extract -----------------------------------
+# Section 1 says what is insured (French farm multi-risk cover) and against what (fire),
+# and quotes the shape of the BDIFF extract the wildfire features are built from.
+#
+# `data/Incendies.csv` is gitignored, so those figures are asserted against the committed
+# summary written by `tools/summarise_bdiff.py`; when the CSV *is* present the summary is
+# re-derived from it too, so a stale summary cannot pass silently.
+BDIFF_N_FIRES, BDIFF_N_DEPTS = 23462, 93
+BDIFF_YEAR_MIN, BDIFF_YEAR_MAX = 2016, 2023
+BDIFF_HA_TOTAL = 145309
+
+bdiff_path = REPO / "data" / "bdiff_extract_summary.json"
+if bdiff_path.exists():
+    bdiff = json.loads(bdiff_path.read_text(encoding="utf-8"))
+
+    raw_csv = REPO / "data" / "Incendies.csv"
+    if raw_csv.exists():
+        import sys
+        sys.path.insert(0, str(REPO / "tools"))
+        from summarise_bdiff import summarise
+
+        ok = summarise(raw_csv) == bdiff
+        results.append((ok, f"{'PASS' if ok else 'FAIL'}  section 1: the committed BDIFF "
+                            f"summary still matches data/Incendies.csv"))
+
+    check("section 1: BDIFF fires in the extract", bdiff["n_fires"], BDIFF_N_FIRES, 0)
+    check("section 1: BDIFF departements", bdiff["n_departements"], BDIFF_N_DEPTS, 0)
+    check("section 1: BDIFF first year", bdiff["year_min"], BDIFF_YEAR_MIN, 0)
+    check("section 1: BDIFF last year", bdiff["year_max"], BDIFF_YEAR_MAX, 0)
+    check("section 1: BDIFF hectares burnt", bdiff["hectares_total"], BDIFF_HA_TOTAL, 0.5)
+else:
+    results.append((False, "FAIL  data/bdiff_extract_summary.json missing -- run "
+                           "tools/summarise_bdiff.py"))
 
 # the carve-repeat spread quoted in §3.1, now measured rather than asserted
 check("§3.1 carve-repeat spread %", 100 * (129.4 - 120.0) / 120.0, 7.8, 0.05)
