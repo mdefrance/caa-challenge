@@ -1,0 +1,41 @@
+{
+  "fixed_params": {
+    "objective": "reg:tweedie",
+    "tweedie_variance_power": 1.7,
+    "max_depth": 1,
+    "n_estimators": 300,
+    "learning_rate": 0.1,
+    "random_state": 42
+  },
+  "arms": {
+    "AutoCarver": {
+      "rmse_dev": 6613.808140568304,
+      "spearman_dev": 0.013364509183408273,
+      "top_decile_lift_dev": 3.5557581756195447,
+      "tweedie_deviance_dev": 41.00196442202789,
+      "n_modelled_features": 200,
+      "seconds": 359.1
+    },
+    "no carving": {
+      "rmse_dev": 6615.0132101398485,
+      "spearman_dev": 0.00930125541571205,
+      "top_decile_lift_dev": 2.5979497283948763,
+      "tweedie_deviance_dev": 42.52987412313634,
+      "n_modelled_features": 200,
+      "seconds": 201.3
+    },
+    "optbinning": {
+      "rmse_dev": 6625.241504647579,
+      "spearman_dev": 0.006932536113514955,
+      "top_decile_lift_dev": 1.375436614522071,
+      "tweedie_deviance_dev": 1682.8468811531568,
+      "n_modelled_features": 200,
+      "seconds": 236.9
+    }
+  },
+  "constant_predictor": {
+    "value": 182.78860026567781,
+    "rmse_dev": 6617.646044495917,
+    "tweedie_deviance_dev": 44.55504894275992
+  }
+}

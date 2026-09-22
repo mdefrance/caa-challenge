@@ -1,0 +1,19 @@
+# model: frequency | arm: optbinning | features: fixed
+# optb_max_bins: 5 | optb_ordinals: categorical | optb_bin_numericals: no
+# n_trials: 300 | seeds: [42, 1, 7, 2026] | smoke: False
+# n_modelled_features: 100
+# selection_seconds: 0.0
+# tweedie_power_for_deviance: 1.7
+# fixed_feature_list: fixed_features_frequency.json
+# ordinals_rank_encoded: 0
+# binning_fit_seconds: 3.3
+# n_binned_columns: 50
+# n_raw_numericals_passed_through: 50
+# total_bins: 200
+# mean_bins: 4.0
+# n_single_bin: 1
+seed,log_loss_train,log_loss_dev,max_depth,n_estimators,minutes
+42,0.7924274401095855,0.9033632185970147,1,107,39.2
+1,0.7726360450176157,0.9170233512246138,2,336,56.9
+7,0.8442155975361378,0.9215721298896926,1,345,55.5
+2026,0.715727850581042,0.9137469238923925,3,119,37.3

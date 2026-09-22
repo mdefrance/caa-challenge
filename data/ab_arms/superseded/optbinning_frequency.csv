@@ -1,0 +1,18 @@
+# arm: optbinning 0.21.0 BinningProcess (min_prebin_size=0.02, max_n_bins=5, n_jobs=6, metric=bins/indices)
+# binning target: binary collapse y>0; downstream target: 3-class ordinal
+# n_trials: 300 | seeds: [42, 1, 7, 2026] | smoke: False
+# binning_fit_seconds: 45.1
+# binning_transform_seconds: 70.9
+# n_input_features: 555
+# n_binned_columns: 555
+# n_dropped_by_optbinning: 0
+# n_single_bin_columns: 26
+# mean_bins_per_column: 4.117
+# optbinning_status_counts: {'OPTIMAL': np.int64(555)}
+# selection_seconds: 54.9
+# n_selected: 100
+seed,log_loss_train,log_loss_dev,max_depth,n_estimators,minutes
+42,0.8407998335660282,0.9592504602146205,2,204,43.8
+1,0.8404013684597654,0.950601266259868,1,279,35.1
+7,0.8753083870829802,0.9468817630186818,1,140,28.0
+2026,0.8435384484624012,0.9489262209398265,1,188,24.7

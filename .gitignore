@@ -41,3 +41,5 @@ __pycache__/
 
 # local convenience runner: absolute paths, not part of the deliverable
 /run_chain.sh
+/run_no_carving.sh
+/run_sharpen.sh/.sharpen.lock

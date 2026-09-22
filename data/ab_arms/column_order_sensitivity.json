@@ -1,0 +1,20 @@
+{
+  "params": {
+    "objective": "multi:softprob",
+    "n_estimators": 200,
+    "learning_rate": 0.1,
+    "max_depth": 1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.5,
+    "colsample_bylevel": 0.7,
+    "random_state": 42
+  },
+  "log_loss_by_order": {
+    "as built (type-grouped)": 0.931677759597163,
+    "reversed": 0.9306015941950148,
+    "alphabetical": 0.9321138188717645,
+    "shuffled A": 0.9330724103426745,
+    "shuffled B": 0.9288614116212657
+  },
+  "spread": 0.004210998721408843
+}

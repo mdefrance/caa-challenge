@@ -1,0 +1,17 @@
+# arm: no carving -- ordinals rank-encoded from declared levels, categoricals
+#   integer-coded on train, numericals untouched. Selector, budget, objectives and
+#   trial counts identical to the carved arms; only the binning step is removed.
+# n_trials: 400 | seeds: [42, 1, 7, 2026] | smoke: False
+# encode_seconds: 81.6
+# selection_seconds: 98.5
+# n_input_features: 546
+# n_selected: 200
+# max_categorical_cardinality: 1929
+# ordinals_from_declared_levels: 238
+# ordinals_from_prefix: 0
+# ordinals_fell_back_to_codes: 0
+seed,rmse_train,rmse_dev,charge_rmse_train,charge_rmse_dev,max_depth,n_estimators,minutes
+42,6703.0051198163455,6612.14417578975,6818.2763249945965,6635.319201513843,1,193,52.0
+1,6552.5786067280505,6597.61851451399,6663.280933091299,6621.80886887009,3,346,63.1
+7,6706.99033558735,6612.963757487336,6823.03521923655,6637.055110357794,1,335,52.0
+2026,6710.053398307657,6610.26867088258,6826.813953678998,6634.316061949106,1,301,65.7

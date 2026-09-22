@@ -30,6 +30,9 @@ dev = [
     "pylint>=3.3.5",
     "isort>=6.0.1",
     "nbconvert>=7.17.1",
+    # pinned to the version ARTICLE.md §2.1 cites, for the optbinning-vs-AutoCarver
+    # ablation in tools/ablation_optbinning_*.py
+    "optbinning==0.21.0",
 ]
 
 [tool.uv]

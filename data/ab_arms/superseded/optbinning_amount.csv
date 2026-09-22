@@ -1,0 +1,18 @@
+# arm: optbinning 0.21.0 BinningProcess (min_prebin_size=0.02, max_n_bins=5, n_jobs=6, metric=bins/indices)
+# binning target: continuous CM (no collapse -- the continuous path accepts categorical_variables)
+# n_trials: 400 | seeds: [42, 1, 7, 2026] | smoke: False
+# binning_fit_seconds: 29.4
+# binning_transform_seconds: 66.5
+# n_input_features: 546
+# n_binned_columns: 546
+# n_dropped_by_optbinning: 0
+# n_single_bin_columns: 20
+# mean_bins_per_column: 4.172
+# optbinning_status_counts: {'OPTIMAL': np.int64(546)}
+# selection_seconds: 138.2
+# n_selected: 200
+seed,rmse_train,rmse_dev,charge_rmse_train,charge_rmse_dev,max_depth,n_estimators,minutes
+42,6716.2402615124565,6616.603694225639,6833.493903615415,6642.477339250449,2,524,50.4
+1,6714.879807138948,6616.977945267731,6832.566756643094,6643.387814788297,2,139,38.3
+7,6713.660491201994,6615.523121635179,6831.140284537896,6641.846304342357,1,180,30.9
+2026,6718.272253244908,6617.535093062297,6835.83985137144,6643.397185027327,7,119,51.3

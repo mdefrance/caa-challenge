@@ -1,0 +1,19 @@
+# model: amount | arm: optbinning | features: fixed
+# optb_max_bins: 5 | optb_ordinals: categorical | optb_bin_numericals: no
+# n_trials: 400 | seeds: [42, 1, 7, 2026] | smoke: False
+# n_modelled_features: 200
+# selection_seconds: 0.0
+# tweedie_power_for_deviance: 1.7
+# fixed_feature_list: fixed_features_amount.json
+# ordinals_rank_encoded: 0
+# binning_fit_seconds: 8.5
+# n_binned_columns: 149
+# n_raw_numericals_passed_through: 51
+# total_bins: 584
+# mean_bins: 3.919
+# n_single_bin: 1
+seed,rmse_train,rmse_dev,charge_rmse_train,charge_rmse_dev,spearman_dev,top_decile_lift_dev,tweedie_deviance_dev,max_depth,n_estimators,minutes
+42,6708.044635896533,6613.189360039802,6824.627369011358,6638.586145195212,0.011390042835321586,3.5961776609467204,40.92347831631264,1,310,61.0
+1,6709.876843812095,6611.905352020129,6826.971525615433,6636.927570810378,0.015454592871670812,3.9922251298753073,41.142408228858805,1,108,45.4
+7,6709.73468309522,6614.134457643099,6826.6019134535,6639.45683436034,0.010147453289072541,3.7823411333141843,41.122186685389934,1,293,59.1
+2026,6712.1528440618795,6613.844280797212,6829.580971124633,6639.467114019969,0.009436955468100762,4.2063764342275745,41.13625432174744,1,304,61.9

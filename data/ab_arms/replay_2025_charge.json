@@ -1,0 +1,17 @@
+{
+  "severity_rmse_train": 6715.363660848336,
+  "charge_rmse_train": 6832.986569663569,
+  "severity_rmse_dev": 6613.817571960261,
+  "charge_rmse_dev": 6639.8940620230715,
+  "control_recorded_severity_rmse_dev": 6613.817574532793,
+  "control_delta": 2.572531229816377e-06,
+  "control_passed": true,
+  "n_model_features": 144,
+  "artifacts": {
+    "target_carver": "model/cm_carver_freq_tschuprowt.json",
+    "amount_carver": "model/amount/018_carver.json",
+    "amount_model": "model/amount/019_xgboost.json",
+    "frequency_handoff": "data/frequency_012.csv",
+    "legacy_checkout": "C:\\Users\\defra\\Desktop\\git\\PROJECTS\\caa-challenge-frequency"
+  }
+}

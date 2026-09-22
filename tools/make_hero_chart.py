@@ -5,8 +5,10 @@ does, and plots its raw modalities against the buckets the carver assigned them 
 
 The picture is the argument. On the default feature, `SURFACE4` (floor area), sixteen area
 bands carry a claim count that climbs roughly tenfold, and the carver cuts them in two at
-1000 m². The lower panel shows why it stops there: every band above 4500 m² sits under
-`min_freq`, so their apparent rates rest on a handful of policies. Nobody chose that cut.
+1000 m². The lower panel is about trust, not about the cut: the bands from 4500 m² to
+7000 m² sit under `min_freq`, so their apparent rates rest on a handful of policies.
+(`7000+` does clear it -- it is the catch-all.) `min_freq` is not what produced two
+buckets; `--explain` shows what did. Nobody chose that cut.
 
 The badge quantifies it: Tschuprow's T between the feature and the target, before and
 after carving, on train and on dev. T normalises chi-square by the table's degrees of
@@ -35,6 +37,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import matplotlib.patheffects as patheffects
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -57,12 +60,12 @@ DEFAULT_KIND = "ordinal"
 # Human-readable names, from the challenge's own data dictionary (Descriptif_donnees.xlsx).
 # The modality codes themselves are anonymised by the insurer; the variable meaning is not.
 LABELS = {
-    "ACTIVIT2": "Activité — business activity of the insured entity",
-    "SURFACE4": "Données de surface — floor area, m²",
-    "SURFACE6": "Données de surface — floor area, m²",
-    "TAILLE1": "Taille de risque — insured value band",
-    "TMM_VOR_MMAX_A": "Données de température — highest monthly mean, °C",
-    "NBJRR10_MMAX_A": "Données de pluie — days with ≥10 mm of rain, monthly max",
+    "ACTIVIT2": "ACTIVIT2: business activity of the insured entity",
+    "SURFACE4": "SURFACE4: floor area, m²",
+    "SURFACE6": "SURFACE6: floor area, m²",
+    "TAILLE1": "TAILLE1: insured value band",
+    "TMM_VOR_MMAX_A": "TMM_VOR_MMAX_A: highest monthly mean temperature, °C",
+    "NBJRR10_MMAX_A": "NBJRR10_MMAX_A: days with ≥10 mm of rain, monthly max",
 }
 
 # A few ordinals are stored as strings that do not sort into their own order
@@ -97,30 +100,40 @@ MIN_FREQ_ALPHA = 0.05
 # Two palettes, same keys. The light one doubles as the set of sentinel hex strings the
 # SVG post-processor swaps for CSS variables, so every colour that ends up in the figure
 # has to come from here -- a hard-coded hex anywhere below would silently stay light.
+# Buckets are an IDENTITY encoding -- which supervised bin a raw level was merged into --
+# so the slots are distinct hues in a fixed order, not steps of one ramp. The earlier ramp
+# put the two realised buckets two steps apart on the same blue, which readers reported as
+# indistinguishable; it also failed a lightness band, a chroma floor and the normal-vision
+# separation floor. These steps are the reference categorical order (blue, orange, aqua,
+# violet, magenta), validated for adjacent pairs in both modes -- adjacent is the pairlist
+# that matters here, because buckets are contiguous spans over an ordered feature, so only
+# neighbouring buckets ever touch. Worst adjacent pair: CVD dE 9.2 light / 9.4 dark against
+# an >= 8 target, normal-vision 27.6 / 19.7 against an >= 15 floor. The two hues this feature
+# actually uses are 33.6 (light) and 31.8 (dark) apart.
 LIGHT = {
-    "b0": "#1b3a5c",  # bucket ramp, low -> high claim rate
-    "b1": "#2f6f9f",
-    "b2": "#63a6c8",
-    "b3": "#a8cfe0",
-    "b4": "#dbeaf2",
+    "b0": "#2a78d6",  # bucket slots, fixed order -- distinct hues, never cycled
+    "b1": "#eb6834",
+    "b2": "#1baf7a",
+    "b3": "#4a3aa7",
+    "b4": "#e87ba4",
     "edge": "#ffffff",  # bar edges: the page behind the chart
     "ink": "#12222f",
     "muted": "#6b7f8c",
     "grid": "#e6ecef",
-    "accent": "#c0392b",
+    "accent": "#5a6b76",  # threshold rule: an annotation, so neutral, not a data hue
     "ground": "#ffffff",  # PNG background only; the SVG is transparent
 }
 DARK = {
-    "b0": "#2d6f9e",
-    "b1": "#4e97c6",
-    "b2": "#78bade",
-    "b3": "#a6d6ee",
-    "b4": "#cfe9f7",
+    "b0": "#3987e5",
+    "b1": "#d95926",
+    "b2": "#199e70",
+    "b3": "#9085e9",
+    "b4": "#d55181",
     "edge": "#0d1117",
     "ink": "#e6edf3",
     "muted": "#8b98a5",
     "grid": "#2b3138",
-    "accent": "#ff7b6b",
+    "accent": "#9aa7b2",
     "ground": "#0d1117",
 }
 BUCKET_KEYS = ["b0", "b1", "b2", "b3", "b4"]
@@ -295,6 +308,28 @@ def draw(per_level, per_bucket, colour_key, assoc, feature, levels, palette):
             solid_capstyle="butt",
             zorder=3,
         )
+        # Direct label, sitting on the span it names: identity is then carried by text and
+        # position as well as by hue, which is what the palette's light-mode contrast
+        # check requires and what makes the figure survive a greyscale print.
+        if np.isfinite(rate):
+            span = per_level.index[min(idx)], per_level.index[max(idx)]
+            label = f"{span[0]}" if span[0] == span[1] else f"{span[0]}–{span[1]}"
+            # Anchored to the line, haloed in the surface colour: a bucket's own bars can
+            # rise above its mean, and a bare label would then sit unreadable on one. A
+            # halo keeps the bar's silhouette intact where a filled box would notch it.
+            top.text(
+                min(idx) - 0.4,
+                rate,
+                f" {label} · {rate:.4f} ",
+                va="bottom",
+                ha="left",
+                fontsize=9.5,
+                color=ink,
+                zorder=4,
+                path_effects=[
+                    patheffects.withStroke(linewidth=3.0, foreground=palette["ground"])
+                ],
+            )
 
     top.set_ylabel("average claim count", color=ink, fontsize=11)
     top.tick_params(axis="y", colors=ink)
@@ -318,8 +353,8 @@ def draw(per_level, per_bucket, colour_key, assoc, feature, levels, palette):
     top.text(
         0,
         1.015,
-        "bars: mean claim count of each raw level, coloured by the bucket it was merged "
-        "into  ·  rule: the bucket's own mean  ·  the quantity the carver ranks on",
+        "bars: mean claim count per raw level  ·  line: mean of the bucket it was "
+        "merged into",
         transform=top.transAxes,
         fontsize=9.5,
         color=muted,
@@ -552,13 +587,79 @@ def build(feature: str, kind: str) -> Path:
     return stem.with_suffix(".png")
 
 
+def explain(feature: str, kind: str) -> None:
+    """Why does the carver stop where it stops? Separates `min_freq` from the measure.
+
+    Two questions the chart cannot answer on its own, and that the article states an
+    answer to, so they need checking rather than assuming:
+
+    1. Does `min_freq` alone force the bucket count? Printing each raw level's share
+       against the threshold answers it. On SURFACE4 ten of sixteen bands clear 2 %, so
+       it does not: a grouping with more than two buckets was admissible.
+    2. Was a finer grouping found on train and then rejected on dev? Fitting the same
+       feature a second time *without* `X_dev`/`y_dev` answers it. If the train-only fit
+       returns the same buckets, the dev check is not what produced them -- the carver's
+       own association measure ranked that grouping highest to begin with.
+    """
+    frame, target = load(feature)
+    y_ordinal = collapse_count(target)
+    carver, levels, x_train, y_train = carve(frame, y_ordinal, feature, kind)
+    assignment = bucket_of_each_level(carver, feature, levels)
+
+    shares = x_train[feature].value_counts(normalize=True).reindex(levels)
+    print(f"{feature}: raw level shares on train, against min_freq = {MIN_FREQ:.0%}")
+    for level, share in shares.items():
+        flag = "clears" if share >= MIN_FREQ else "under "
+        print(f"  {str(level):>8s}  {share:8.5f}  {flag}")
+    print(
+        f"  {int((shares >= MIN_FREQ).sum())} of {len(levels)} levels clear min_freq, "
+        f"and max_n_mod = {MAX_N_MOD}"
+    )
+
+    # the same fit without a dev set: does the dev check change the answer?
+    if kind == "ordinal":
+        features = Features(ordinals={feature: levels})
+    else:
+        features = Features(categoricals=[feature])
+    train_only = OrdinalCarver(
+        features=features,
+        target_scale="level",
+        min_freq=MIN_FREQ,
+        max_n_mod=MAX_N_MOD,
+        config=ProcessingConfig(
+            dropna=False, copy=True, verbose=False, min_freq_alpha=MIN_FREQ_ALPHA
+        ),
+    )
+    train_only.fit(x_train, y_train)
+    without_dev = bucket_of_each_level(train_only, feature, levels)
+
+    n_with, n_without = assignment.nunique(), without_dev.nunique()
+    print(f"\nbuckets with dev-set validation: {n_with}")
+    print(f"buckets fitted on train alone  : {n_without}")
+    if n_with == n_without and assignment.equals(without_dev):
+        print(
+            "identical -- the dev check did not reject a finer grouping; the carver's "
+            "association measure ranked this one highest on train in the first place"
+        )
+    else:
+        print("different -- the dev check rejected the train-preferred grouping")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--feature", default=DEFAULT_FEATURE)
     parser.add_argument(
         "--kind", default=DEFAULT_KIND, choices=["ordinal", "categorical"]
     )
+    parser.add_argument(
+        "--explain",
+        action="store_true",
+        help="print why the carver stopped at the bucket count it did, and exit",
+    )
     args = parser.parse_args()
+    if args.explain:
+        explain(args.feature, args.kind)
+        return
     build(args.feature, args.kind)
 
 

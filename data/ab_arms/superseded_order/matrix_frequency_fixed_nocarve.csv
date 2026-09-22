@@ -1,0 +1,13 @@
+# model: frequency | arm: nocarve | features: fixed
+# optb_max_bins: 5 | optb_ordinals: categorical | optb_bin_numericals: no
+# n_trials: 300 | seeds: [42, 1, 7, 2026] | smoke: False
+# n_modelled_features: 100
+# selection_seconds: 0.0
+# tweedie_power_for_deviance: 1.7
+# fixed_feature_list: fixed_features_frequency.json
+# ordinals_rank_encoded: 16
+seed,log_loss_train,log_loss_dev,max_depth,n_estimators,minutes
+42,0.8076740695593564,0.9281024705714487,1,278,47.2
+1,0.8193969449894977,0.9237819512139204,1,118,39.6
+7,0.8425296657897888,0.9277094857844791,1,183,40.3
+2026,0.8158347810386722,0.9191813776118817,1,104,31.2

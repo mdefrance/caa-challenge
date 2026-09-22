@@ -1,0 +1,13 @@
+# model: frequency | arm: autocarver | features: fixed
+# NOT a separate run. With the columns fed in the shared list's own order, this arm is
+# identical to the own-selection arm by construction: the shared 100 features ARE
+# AutoCarver's own selection, so carving them and modelling them in that order is the
+# same computation. Verified empirically on two seeds before the rest were skipped:
+#   seed 42  own-selection 0.9199100734725816  fixed-set 0.9199100734725815  (depth 2, 109 trees)
+#   seed  1  own-selection 0.9246143245272799  fixed-set 0.9246143245272799  (depth 1, 312 trees)
+# Rows below are copied from data/ab_arms/seed_variance.csv.
+seed,log_loss_train,log_loss_dev,max_depth,n_estimators,minutes
+42,0.7819988979524337,0.9199100734725816,2,109,41.5
+1,0.8529210435285756,0.92461432452728,1,312,48.0
+7,0.8197446755859414,0.9207397238839484,1,134,53.5
+2026,0.7597415240233021,0.91452787088533,2,110,42.7
