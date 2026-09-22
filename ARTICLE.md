@@ -14,13 +14,18 @@ Four seeds per arm and one shared feature set later, the credit belongs somewher
 
 ## The finish line, first
 
+**First place in 2025, and an audit a year later that reversed the belief underneath it.
+Binning did beat not binning, but our own library's bins proved indistinguishable from a
+rival's, and the only gain that was not a close call was speed: 133 minutes of carving
+down to 4.3.**
+
 ![SURFACE4: sixteen raw floor-area bands merged into two buckets at 1000 m², with each
 band's share of the portfolio below](docs/hero_SURFACE4.svg)
 
 *Tschuprow's T with the target, on held-out data: 0.0240 across the sixteen raw levels,
-0.0358 across the two buckets — a 1.49× rise.*
+0.0358 across the two buckets, a 1.49× rise.*
 
-That is one real feature from the challenge data — anonymised French farm policies, priced
+That is one real feature from the challenge data: anonymised French farm policies, priced
 against **fire**. Floor area comes in sixteen bands, claim frequency climbs roughly tenfold
 across them, and supervised binning cuts them **in two, at
 1000 m²** — not for want of finer options, since ten of the bands clear the 2 % `min_freq`
@@ -38,10 +43,10 @@ stood when the hackathon closed in spring 2025. That challenge is still open, so
 leaderboard has moved on and nothing here is a leaderboard score. It doubled as the running
 example in the Data Science course we taught at CY Tech.
 
-A year later we re-ran the whole thing. The speed answer was easy: **133 minutes of carving
-became 4.3**. The accuracy answer took three experiments and went badly for us. Every
-year-on-year gain turned out smaller than the noise in our own tuning, and the belief
-underneath all of it — that binning our features is what won — only half survived: binning
+A year later we re-ran the whole thing. The speed answer was easy. The accuracy answer
+took three experiments and went badly for us. Every year-on-year gain turned out smaller
+than the noise in our own tuning, and the belief
+underneath all of it (that binning our features is what won) only half survived: binning
 did beat not binning, but a rival library's bins did just as well, and the edge we had
 credited to carving was really in **which features the selector kept**. This article is
 that audit: four seeds per arm, every margin measured against its own spread, and one
@@ -54,15 +59,15 @@ Agricole* cover, written by Crédit Agricole Assurances' property-and-casualty c
 Pacifica, and the peril being priced is **fire**, which the challenge states is a large
 share of that contract's claims [1]. Barns, machinery, stock.
 
-So a second dataset is joined in. `src/data_toolkit.py::add_wildfire_features` attaches a
+So a second dataset is joined in. `add_wildfire_features` in `src/data_toolkit.py` attaches a
 wildfire-exposure profile per geographic zone from **BDIFF**, France's national forest-fire
 database [3]: burnt area, burnt area over forest, extinction rates and fire counts by
 cause, crossed with the zone's fire-station count and wind zone. The extract is real and
-substantial — **23,462 fires across 93 departments, 145,309 ha burnt over 2016–2023**.
+substantial: **23,462 fires across 93 departments, 145,309 ha burnt over 2016–2023**.
 
 The peril is the reason to care. The IPCC assesses that fire hazard conditions rose
 across Europe from 1980 to 2019, with substantive increases in Western and Central Europe
-— *high confidence* — and that wildfire risk can rise in every European region between
+(*high confidence*), and that wildfire risk can rise in every European region between
 1.5 °C and 3 °C of warming, *medium to high confidence* [6]. Swiss Re puts 2025 insured
 natural-catastrophe losses at USD 107 bn and calls wildfire the fastest-growing line, near
 12 % a year [7]. That is the pressure this pricing sits under, and **none of it is a
@@ -92,7 +97,7 @@ No giant model, no ensemble of ensembles. Three decisions did it: **factor the p
 into frequency × severity, like actuaries do; **bin every feature against the target** with
 the open-source [AutoCarver](https://github.com/mdefrance/AutoCarver) library (mine, per
 the disclosure) [2]; and **weight the rare signal**. Only the first and third came through
-this audit intact (§3.4).
+this audit intact.
 
 ### 2.1 The quiet workhorse: carve the features first
 
@@ -102,13 +107,13 @@ and `NaN`s that *mean something*. Throw those at a tree model and it spends its 
 rediscovering structure you could have handed it.
 
 **Supervised binning** hands it that structure. AutoCarver keeps, for each feature, the
-admissible grouping that maximises statistical association with the target — under a
+admissible grouping that maximises statistical association with the target, under a
 minimum bin frequency, a cap on bins per feature, and (crucially) **validation on a
 held-out dev set**, so a grouping that only works on train is rejected outright. Declare
 your feature types once, carve everything in one `fit`:
 
 ```python
-# AutoCarver 7.0.5, as written in 2025 — see §3 for the current equivalent.
+# AutoCarver 7.0.5, as written in 2025. The current API appears later.
 from AutoCarver import Features, MulticlassCarver
 
 features = Features(
@@ -125,21 +130,21 @@ carver.summary  # every bucket: frequency, target rate, association
 
 ⚠️ **That snippet still runs today, and does something else.** In 7.0.5,
 `MulticlassCarver` carved **one-vs-rest**, so every raw feature came back as several
-columns; that behaviour is `OneVsRestCarver` now. Every snippet in §2 is 2025 code, kept as
-written; §3 is the current API.
+columns; that behaviour is `OneVsRestCarver` now. Every snippet in this section is 2025
+code, kept as written; the next section uses the current API.
 
 **A word on [optbinning](https://github.com/guillermo-navas-palencia/optbinning).** The
 obvious alternative [4]: where we search groupings heuristically, it states the merge of
 CART prebins as a CP/MILP problem and solves that exactly, inside a time limit. We went a
 different way for three reasons about our framing, not the library: we wanted every
 grouping tested on a held-out sample, and `fit(x, y)` has no notion of one; our target is ordered,
-where `MulticlassOptimalBinning` does not treat it so (§3.2); and its multiclass path is
+where `MulticlassOptimalBinning` does not treat it so; and its multiclass path is
 numerical-only, while most of our 435 features are categorical or declared ordinals. Those
-were reasons, not measurements. §3.4 measures them.
+were reasons, not measurements. We measure them below.
 
 What that bought us: ordinals merged **in their natural order**; missing values **never
 silently imputed**, since `dropna=True` carves `NaN` as its own association-scored bucket
-(we ran `dropna=False` and let XGBoost route them natively — the point is that it is a
+(we ran `dropna=False` and let XGBoost route them natively; the point is that it is a
 declared choice); buckets we could **read and defend**; and one uniform pipeline over
 numeric, categorical and ordinal features. We then pre-selected by association and pruned
 redundant features (`ClassificationSelector` does both in one pass).
@@ -156,7 +161,7 @@ E[Y] = P(0)·E[Y|0] + P(1)·E[Y|1] + P(2+)·E[Y|2+]
 ```
 
 Every log loss in this article is the **class-weighted** one, using those same
-inverse-frequency weights — it is what the search minimised. Unweighted, a constant
+inverse-frequency weights: it is what the search minimised. Unweighted, a constant
 base-rate model already scores 0.041; weighted, it scores 4.47, and a uniform ⅓ guess
 scores 1.099. Read 0.92 against those.
 
@@ -173,10 +178,11 @@ Factor the problem, carve the features, weight the rare signal, tune the pruning
 
 ## 3. What a year of releases actually bought
 
-We won with AutoCarver `7.0.5`. Several releases later we re-ran both pipelines — same
-data, same train/dev split, same XGBoost search budget — on the current version
-(`src/frequency_model_2026.ipynb`, `src/amount_model_2026.ipynb`), seeded throughout, so a
-clean checkout reproduces the numbers below exactly.
+We won with AutoCarver `7.0.5`. Nobody asked us to check what the year since had added;
+we wanted it measured rather than assumed. Several releases later we re-ran both
+pipelines (same data, same train/dev split, same XGBoost search budget) on the current
+version (`src/frequency_model_2026.ipynb`, `src/amount_model_2026.ipynb`), seeded
+throughout, so a clean checkout reproduces the numbers below exactly.
 
 Three caveats bound what follows, all detailed in Setup: the carver is not the only thing
 that differs, since selection measures and the severity `min_freq` moved too; 2025 fed both
@@ -195,8 +201,8 @@ from AutoCarver.discretizers import ProcessingConfig
 carver = OrdinalCarver(features=features, min_freq=0.02, max_n_mod=5, config=ProcessingConfig(n_jobs=6))
 ```
 
-Carving wall-clock on the full dataset — 383,610 rows, ~435 qualitative features, one
-machine, runs serialised:
+Carving wall-clock on the full dataset (383,610 rows, ~435 qualitative features, one
+machine, runs serialised):
 
 | Pipeline | Carver | 7.0.5 (1 process) | today (6 workers) | speed-up |
 |---|---|---|---|---|
@@ -222,7 +228,7 @@ using Kendall's tau-c. Scored on a common yardstick, tau-c on the dev set, it ma
 2025 one-vs-rest geometry's association per feature while spending **2.07× fewer columns
 and 2.05× fewer buckets, in a carve 3.8× faster**. Against the unordered multiclass
 carving, which differs only in whether the order is used, it returns identical bucketings
-on 210 of 364 features and wins 111 to 43 on the rest (two-sided sign test, p ≈ 4×10⁻⁸) — a
+on 210 of 364 features and wins 111 to 43 on the rest (two-sided sign test, p ≈ 4×10⁻⁸). A
 reliable direction, a small size: +0.000107 mean tau-c. Declare your ordinals. No arm here
 was carried through selection and tuning, so none of it claims an effect on the final
 metric.
@@ -241,7 +247,7 @@ to the dev metric. End to end:
 
 **That top row is not a result, and it took a deliberate experiment to find out.** The two
 frequency numbers differ by 0.00055, both from a seeded search that reproduces to sixteen
-significant figures — so it is tempting to read the gap as real. It is not. We re-ran the
+significant figures, so it is tempting to read the gap as real. It is not. We re-ran the
 *identical* feature sets under four TPE seeds, changing nothing else:
 
 | Seed | Frequency log loss | Severity RMSE | `CHARGE` RMSE |
@@ -251,12 +257,15 @@ significant figures — so it is tempting to read the gap as real. It is not. We
 | 7 | 0.9207 | 6591.5 | 6615.0 |
 | 2026 | **0.9145** | 6608.9 | 6633.2 |
 
-**Frequency spread: 0.0101 — eighteen times the gap we were about to interpret.** One seed
-lands above the 2025 baseline, another below it, so the seed decides the sign. A seed makes a run **reproducible**, not **representative**, and the two are
-easy to confuse when the number comes back identical every time.
+**Frequency spread: 0.0101, eighteen times the gap we were about to interpret.** One seed
+lands above the 2025 baseline, another below it, so the seed decides the sign. A seed
+makes a run **reproducible**, not **representative**, and the two are easy to confuse
+when the number comes back identical every time. Read one seeded run and the margin you
+act on is a single draw from a spread you never measured: we nearly shipped a year of
+progress that was not there.
 
 Severity moves further. Dev RMSE spans **143.2 across those seeds, 2.16 % of the 2025
-figure**, and `CHARGE` **155.2 (2.34 %)** — so the 2.18 % and 2.37 % margins are 1.01×
+figure**, and `CHARGE` **155.2 (2.34 %)**, so the 2.18 % and 2.37 % margins are 1.01×
 their own noise. Worse, **seed 42, the one the notebook reports, is the best of the four on
 both**, and the other three land within 0.4 % of the 2025 baseline; averaged over the four
 the margin is 0.65 % and 0.72 %. **Both sides are draws, and the run we published is the
@@ -268,19 +277,19 @@ unlabelled submission sample, so the era we won with had no end-to-end dev score
 reproduces that notebook's severity figure to 3×10⁻⁶.
 
 **Named plainly: nothing a year of releases added bought accuracy here.** Which leaves the
-older, larger question, the one §2.1 asserted and never tested: was the binning worth
+older, larger question, the one we asserted a year ago and never tested: was the binning
 anything at all?
 
 ### 3.4 Three ways to bin, and one question underneath them
 
-§2.1 gave reasons for carving, and reasons for not using optbinning. Reasons are cheap, so
+We gave reasons for carving, and reasons for not using optbinning. Reasons are cheap, so
 we ran all three: the same pipeline end to end, both models, four seeds each, only the
-binning step changed. The third arm carves nothing — ordinals rank-encoded from the
+binning step changed. The third arm carves nothing: ordinals rank-encoded from the
 orderings the notebook already declares, categoricals integer-coded on train, numericals
-untouched — the baseline a practitioner reaches for with no binning library, not a straw
-man (`tools/ablation_matrix.py`).
+untouched. It is the baseline a practitioner reaches for with no binning library, not a
+straw man (`tools/ablation_matrix.py`).
 
-The first of §2.1's three reasons turns out not to be a preference at all — handing
+The first of those three reasons turns out not to be a preference at all. Handing
 `BinningProcess` our three-class ordinal target fails outright:
 
 ```
@@ -299,8 +308,8 @@ other. All three on the same hundred: optbinning 0.9136, AutoCarver 0.9199, no c
 
 **Run the arms as pipelines and the differences are large; hold the feature set constant
 and almost all of it disappears.** In the left panel each arm carves, selects its own 100
-features, then tunes; in the right all three model the same 100 — AutoCarver's own
-selection, in the order its selector ranked them — so only binning differs. AutoCarver
+features, then tunes; in the right all three model the same 100 (AutoCarver's own
+selection, in the order its selector ranked them), so only binning differs. AutoCarver
 scores the same in both panels because that shared list *is* its own selection: one run,
 not two.
 
@@ -309,7 +318,7 @@ On its own selection every pair separates with no overlap: AutoCarver over no ca
 optbinning by 3.50×. On the shared set, two findings.
 
 **Binning earned its place.** Both binners beat carving nothing by 1.59× the pooled spread,
-with no overlap, and each wins on all four seeds individually. §2.1 believed that for a
+with no overlap, and each wins on all four seeds individually. We believed that for a
 year without testing it; it holds.
 
 **But the two libraries are indistinguishable as binners.** On identical features the gap
@@ -329,19 +338,19 @@ lift optbinning reaches 3.94 and AutoCarver 3.35 against no carving's
 2.43](docs/results_severity_two_metrics.svg)
 
 **Severity needs a different metric to say anything at all.** On the same 200 features dev
-RMSE puts the arms at 6570.7, 6580.7 and 6612.8 — 0.09×, 0.58× and 0.89× of pooled spread,
-so nothing separates — while a constant predictor, the training mean, scores 6617.6, within
-47 of every one of them.
+RMSE puts the arms at 6570.7, 6580.7 and 6612.8, or 0.09×, 0.58× and 0.89× of pooled
+spread, so nothing separates. A constant predictor, the training mean, scores 6617.6,
+within 47 of every one of them.
 
-On **top-decile lift** — the mean claim among the 10 % of policies a model ranks highest,
-over the overall mean, where no signal scores 1.00 — the picture changes. Both binners
+On **top-decile lift** (the mean claim among the 10 % of policies a model ranks highest,
+over the overall mean, where no signal scores 1.00) the picture changes. Both binners
 clear the unbinned arm, optbinning decisively at 2.41× the pooled spread and AutoCarver at
 0.74×, while the two binners draw at 0.44×. The same ordering as frequency, from a metric
 RMSE could not see.
 
 **Why RMSE is blind here.** It rewards overfitting on this target. The train-to-dev RMSE
-ratio is 1.01 for every binned seed; the unbinned arm's seed 7 hit **0.31** — train RMSE
-1994 against dev 6530 — and that memorising model posted the *best dev RMSE of its arm*,
+ratio is 1.01 for every binned seed; the unbinned arm's seed 7 hit **0.31** (train RMSE
+1994 against dev 6530), and that memorising model posted the *best dev RMSE of its arm*,
 while its lift stayed at 2.37.
 
 ![Top-decile lift against the tree depth the tuner chose, one point per seed: the badly
@@ -366,14 +375,13 @@ Earlier we asked how you'd handle a signal this rare. Our answer:
   half is easier to debug.
 - **Bin like you mean it — then check which step actually paid.** Binning beat carving
   nothing by 1.59× the seed spread, but two libraries' bins were indistinguishable and the
-  gap between the *pipelines* was four times the gap between the *binners* (§3.4). Ours won
+  gap between the *pipelines* was four times the gap between the *binners*. Ours won
   on feature selection, not on cuts.
 - **A metric can be blind.** Dev RMSE could not separate any severity arm from predicting
   the mean, and preferred a model that overfit threefold. Top-decile lift separated them
-  2.4× (§3.4).
+  2.4×.
 - **Beat the dumbest baseline first.** Our severity model spent a year looking like it
-  worked because 6613.8 dev RMSE reads like a number. The training mean scores 6617.6
-  (§3.4).
+  worked because 6613.8 dev RMSE reads like a number. The training mean scores 6617.6.
 - **Measure your seed spread before you read a margin.** Four extra runs per model turned
   two apparent wins into draws — the cheapest honesty check here, and the one we would run
   first next time.
@@ -394,7 +402,7 @@ Earlier we asked how you'd handle a signal this rare. Our answer:
 
 ## Setup — exactly what was measured
 
-Every number in §3 comes from four notebook runs on **one machine, serialised**
+Every measured number above comes from four notebook runs on **one machine, serialised**
 (2026-08-11, 08:36 → 12:46).
 
 | | |
@@ -417,13 +425,14 @@ unaffected.
 **The 2026 arm is seeded and the 2025 baseline is not.** The 2026 Optuna search adds
 `TPESampler(seed=42)`; the 2025 numbers came from an unseeded search. Reproducible is not
 representative, so both were re-run under four TPE seeds (`data/ab_arms/seed_variance.csv`,
-`seed_variance_amount.csv`, and `optbinning_{frequency,amount}.csv` for §3.4). **Every
-accuracy figure here is stated against its own measured seed spread.**
+`seed_variance_amount.csv`, and `optbinning_{frequency,amount}.csv` for the three-way
+binning comparison). **Every accuracy figure here is stated against its own measured seed
+spread.**
 
-**The dev set is selection-contaminated** — 400 trials chose against it — so dev `CHARGE`
+**The dev set is selection-contaminated** (400 trials chose against it), so dev `CHARGE`
 RMSE is optimistic rather than held out. Severity and `CHARGE` RMSE are unweighted: the
-frequency-error weights of §2.3 enter the fit, not the score. No leaderboard figure, old or
-current, is quoted anywhere in this article.
+frequency-error weights described earlier enter the fit, not the score. No leaderboard
+figure, old or current, is quoted anywhere in this article.
 
 Every number is reproducible from PyPI releases, with one exception: the 2025 `CHARGE`
 baseline needs the 2025 carvers and XGBoost models, build outputs of the original working
