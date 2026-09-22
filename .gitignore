@@ -43,3 +43,12 @@ __pycache__/
 /run_chain.sh
 /run_no_carving.sh
 /run_sharpen.sh/.sharpen.lock
+
+# Kaggle kernels: only kernel-metadata.json is tracked; the code beside it is generated
+# from src/ by tools/build_kaggle.py right before a push.
+/kaggle/*/*
+!/kaggle/*/kernel-metadata.json
+
+# The article is held back from GitHub until Towards Data Science publishes it (TDS promotes
+# pieces that appear there first). It stays the local source of record; re-add after publication.
+/ARTICLE.md

@@ -1,0 +1,22 @@
+{
+  "id": "mariodefrance/caa-amount-model",
+  "title": "caa-amount-model",
+  "code_file": "caa-amount-model.ipynb",
+  "kernel_type": "notebook",
+  "language": "python",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "competition_sources": [],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-images/python@sha256:dafd4ce5668bbf1ad422e4c109e0f18c9623c3a7c7f48b0235f13142755c40b9",
+  "keywords": [],
+  "dataset_sources": [
+    "mariodefrance/caa-challenge-2025"
+  ],
+  "kernel_sources": [
+    "mariodefrance/data-toolkit",
+    "mariodefrance/objectives"
+  ]
+}
