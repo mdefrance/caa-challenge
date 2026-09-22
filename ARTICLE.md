@@ -393,7 +393,7 @@ Earlier we asked how you'd handle a signal this rare. Our answer:
 - **Run it without installing anything** — the
   [frequency](https://www.kaggle.com/code/mariodefrance/caa-frequency-model) and
   [severity](https://www.kaggle.com/code/mariodefrance/caa-amount-model) notebooks on
-  Kaggle, against a
+  Kaggle, at a reduced tuning budget, against a
   [mirror of the data](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025)
 - **AutoCarver** — [docs](https://autocarver.readthedocs.io/en/stable/) ·
   [source](https://github.com/mdefrance/AutoCarver)
@@ -414,6 +414,7 @@ Every measured number above comes from four notebook runs on **one machine, seri
 | **2026 arm** | AutoCarver **7.7.3**, scikit-learn 1.8.0, numpy 2.4.6, **`n_jobs=6`**, Optuna seeded (`TPESampler(seed=42)`) |
 | XGBoost / Optuna | 3.2.0 / 4.9.0 — 300 trials (frequency), 400 (severity), identical between eras |
 | Data | ENS *Challenge Data* #161 [1] plus a BDIFF fire-history extract [3], both Etalab Licence Ouverte 2.0; the exact extract is mirrored on Kaggle |
+| Figures | All four are ours, generated from that data by `tools/make_hero_chart.py` and `tools/make_result_charts.py`; no third-party images |
 
 **Known differences beyond the carver**, to discount yourself: the 2026 arm selects with
 the library's **default measures**, not the 2025 thresholds; it carves severity at
@@ -444,29 +445,30 @@ that checkout and writes its output and its control check to
 
 ## References
 
-[1] Crédit Agricole Assurances, *AssurPrime : Saurez-vous prédire la prime d'assurance ?*
-(2025), ENS Challenge Data #161 — https://challengedata.ens.fr/challenges/161
+[1] Crédit Agricole Assurances, [*AssurPrime : Saurez-vous prédire la
+prime d'assurance ?*](https://challengedata.ens.fr/challenges/161) (2025), ENS Challenge Data #161
 
-[2] M. Defrance, *AutoCarver* (2026), PyPI / GitHub —
-https://github.com/mdefrance/AutoCarver
+[2] M. Defrance, [*AutoCarver*](https://github.com/mdefrance/AutoCarver) (2026), PyPI /
+GitHub
 
-[3] Institut national de l'information géographique et forestière, *Base de Données sur les
-Incendies de Forêts en France (BDIFF)* (2025), Ministère de l'Agriculture et de la
-Souveraineté Alimentaire — https://bdiff.agriculture.gouv.fr
+[3] Institut national de l'information géographique et forestière, [*Base de Données sur
+les Incendies de Forêts en France (BDIFF)*](https://bdiff.agriculture.gouv.fr) (2025),
+Ministère de l'Agriculture et de la Souveraineté Alimentaire
 
-[4] G. Navas-Palencia, *OptBinning: The Python Optimal Binning library* (2025), v0.21.0 —
-https://github.com/guillermo-navas-palencia/optbinning
+[4] G. Navas-Palencia, [*OptBinning: The Python Optimal Binning
+library*](https://github.com/guillermo-navas-palencia/optbinning) (2025), v0.21.0, GitHub
 
-[5] M. Couillaud, *Retour sur le hackathon de la Data Science Academy* (2025), LinkedIn —
-https://www.linkedin.com/posts/myriam-couillaud-6885012_data-ia-innovation-activity-7343893386023649281-w-qQ
+[5] M. Couillaud, [*Retour sur le hackathon de la Data Science
+Academy*](https://www.linkedin.com/posts/myriam-couillaud-6885012_data-ia-innovation-activity-7343893386023649281-w-qQ)
+(2025), LinkedIn
 
-[6] IPCC (GIEC), *Climate Change 2022: Impacts, Adaptation and Vulnerability*, ch. 13
-“Europe” (2022), Sixth Assessment Report, Working Group II —
-https://www.ipcc.ch/report/ar6/wg2/chapter/chapter-13/
+[6] IPCC (GIEC), [*Climate Change 2022: Impacts, Adaptation and Vulnerability*, ch. 13
+“Europe”](https://www.ipcc.ch/report/ar6/wg2/chapter/chapter-13/) (2022), Sixth Assessment
+Report, Working Group II
 
-[7] Swiss Re Institute, *sigma 1/2026: Natural catastrophes in 2025 — the persistent rise
-of wildfire and storm risk* (2026) —
-https://www.swissre.com/institute/research/sigma-research/sigma-2026-01-natcat-2025-wildfire-storm-risk.html
+[7] Swiss Re Institute, [*sigma 1/2026: Natural catastrophes in 2025 — the persistent rise
+of wildfire and storm risk*](https://www.swissre.com/institute/research/sigma-research/sigma-2026-01-natcat-2025-wildfire-storm-risk.html)
+(2026), sigma research
 
 ---
 
