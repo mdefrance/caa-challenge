@@ -33,6 +33,7 @@ dev = [
     # pinned to the version ARTICLE.md §2.1 cites, for the optbinning-vs-AutoCarver
     # ablation in tools/ablation_optbinning_*.py
     "optbinning==0.21.0",
+    "kaggle>=2.2.4",
 ]
 
 [tool.uv]
