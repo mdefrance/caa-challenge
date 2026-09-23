@@ -111,7 +111,7 @@ def main() -> int:
     t0 = time.perf_counter()
     ac_train = carver.fit_transform(x_train.copy(), y_ord_train, X_dev=x_dev.copy(), y_dev=y_ord_dev)
     print(f"[autocarver] carve {time.perf_counter() - t0:.1f}s", flush=True)
-    ac_selected = select(qualitatives + Features(numericals=nums), ac_train, y_ord_train, "autocarver")
+    ac_selected = select(carver.features + Features(numericals=nums), ac_train, y_ord_train, "autocarver")
 
     # --- 3. optbinning, both declarations ----------------------------------------------
     from optbinning import BinningProcess

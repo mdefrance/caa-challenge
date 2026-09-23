@@ -33,10 +33,11 @@ REPO_URL = "https://github.com/mdefrance/caa-challenge/blob/main/src/"
 KAGGLE_DATA = "/kaggle/input/datasets/mariodefrance/caa-challenge-2025/"
 
 # Kaggle's image ships a numpy older than AutoCarver's floor, so installing upgrades numpy
-# underneath a kernel that has already imported it, and the kernel must restart. That is why a
-# pushed notebook cannot run on its own: Kaggle's batch runner (papermill) preloads numpy too and
-# treats the restart as DeadKernelError. Push, then run it once in the Kaggle editor and
-# Quick Save. Verified 2026-09-22 on three pushes.
+# underneath a kernel that has already imported it, and the kernel must restart. Kaggle's batch
+# runner treats that restart as DeadKernelError, so batch runs rely on the notebook's package
+# requirement `AutoCarver==7.7.3`, installed before the kernel starts (see kaggle/README.md);
+# this cell then finds AutoCarver present and only prints versions. It still installs and
+# restarts in an interactive session without that setting.
 INSTALL_CELL = '''import importlib.metadata as md
 import subprocess
 import sys

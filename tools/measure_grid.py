@@ -55,7 +55,7 @@ def main():
         SpearmanFilter,
     )
 
-    qual, quant = g["qualitatives"], g["quantitatives"]
+    qual, quant = g["carver"].features, g["quantitatives"]  # carved set on 7.7 and 7.8
     qual_names = set(qual.versions)
     print(
         f"candidates: {len(qual_names)} carved qualitative + {len(quant.versions)} raw quantitative",

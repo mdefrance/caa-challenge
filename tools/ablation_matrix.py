@@ -219,7 +219,8 @@ def build_autocarver(x_train, x_dev, y_train, y_dev, cats, ordinal_columns, nums
         "total_bins": int(sum(len(f.labels) for f in carver.features if f.version in columns)),
     }
     keep = columns + [c for c in nums if c in train.columns]
-    return train[keep], dev[keep], meta, qualitatives
+    # carver.features, not qualitatives: from AutoCarver 7.8 a carver works on its own copy
+    return train[keep], dev[keep], meta, carver.features
 
 
 def severity_extras(y_true, predicted):

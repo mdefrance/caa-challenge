@@ -27,13 +27,21 @@ kaggle kernels push -p kaggle/amount
 
 Push the utility scripts first, since both notebooks import them.
 
-**A pushed notebook's own run always fails, and that is expected.** AutoCarver needs a newer
-numpy than Kaggle's image, so installing it forces a kernel restart, and Kaggle's batch runner
-treats that restart as `DeadKernelError`. So the push only delivers the code. To publish a run,
-open each notebook in the Kaggle editor, run the first cell (it restarts the kernel), then
-**Run All**, then **Save Version → Quick Save**. Quick Save keeps the interactive outputs.
+**Each notebook needs one setting the push cannot carry:** the Kaggle package requirement
+`AutoCarver==7.7.3` (notebook settings, requirements; 7.8.0 works too, but 7.7.3 is what the
+article measured). Kaggle installs it before the kernel starts, which is the only way past the
+numpy trap in a batch run: AutoCarver needs a newer numpy than the image, and installing it
+inside a running kernel forces a restart that Kaggle's runner treats as `DeadKernelError`. Two traps in that field, both hit on 2026-09-22:
+
+- **No quotes.** The line is split on spaces with no shell, so `"AutoCarver>=7.7.3"` reaches
+  pip with the quotes in it and fails as an invalid requirement.
+- **No `>` or `<`.** The install step does go through a shell, so `AutoCarver>=7.7.3` redirects
+  pip's output into a file named `=7.7.3` and installs whatever AutoCarver is newest. Use `==`.
+
+`kernel-metadata.json` has no field for it, so check the setting survives each push. The
+notebook's own install cell stays as the fallback for interactive sessions.
 
 All four must stay **public** (`"is_private": false`, which the build checks); a public
-notebook that imports a
-private utility script fails for every reader but its owner. Keep each `title` as it is,
-because Kaggle derives the URL slug from the title and the article links those URLs.
+notebook that imports a private utility script fails for every reader but its owner. Keep each
+`title` as it is, because Kaggle derives the URL slug from the title and the article links
+those URLs.
