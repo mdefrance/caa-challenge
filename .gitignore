@@ -42,7 +42,8 @@ __pycache__/
 # local convenience runner: absolute paths, not part of the deliverable
 /run_chain.sh
 /run_no_carving.sh
-/run_sharpen.sh/.sharpen.lock
+/run_sharpen.sh
+/.sharpen.lock
 
 # Kaggle kernels: only kernel-metadata.json is tracked; the code beside it is generated
 # from src/ by tools/build_kaggle.py right before a push.
