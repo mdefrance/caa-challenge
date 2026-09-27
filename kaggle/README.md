@@ -45,3 +45,16 @@ All four must stay **public** (`"is_private": false`, which the build checks); a
 notebook that imports a private utility script fails for every reader but its owner. Keep each
 `title` as it is, because Kaggle derives the URL slug from the title and the article links
 those URLs.
+
+## Datasets
+
+Each dataset folder tracks only its `dataset-metadata.json`; the files beside it are built or
+downloaded, and gitignored.
+
+| Folder | Kaggle | Contents |
+|---|---|---|
+| `caa-challenge-2025/` | [caa-challenge-2025](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025) | the challenge files, `Incendies.csv` and the 2026 hand-off. Only the metadata is kept here; update the description with `kaggle datasets metadata mariodefrance/caa-challenge-2025 --update -p kaggle/caa-challenge-2025` |
+| `solution-2025/` | [caa-challenge-2025-solution](https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025-solution) | the saved 2025 models the replay needs, built by `tools/build_2025_solution.py` from the original working checkout |
+
+A new version of a dataset replaces all of its files, so never push `caa-challenge-2025/` from
+local copies: that would re-upload ~1.9 GB and could swap mirror files for non-identical ones.

@@ -14,12 +14,19 @@ alongside it comes from the same models the notebook used.
 
 Artifacts
 ---------
-The 2025 model artifacts are not in this repository -- they are gitignored build outputs
-of the original working repo, and one of them (the target carver) is 56 MB. Point
-`--legacy` at that checkout. Everything else (data, code) resolves from there too, so the
-replay runs in the 2025 environment rather than against a migrated artifact.
+The 2025 model artifacts are not in this repository (one of them, the target carver, is
+56 MB). They are published as the Kaggle dataset
+https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025-solution, built by
+`tools/build_2025_solution.py`. Download it and point `--artifacts` at the folder; the
+challenge CSVs and `Incendies.csv` are read from this repository's `data/` (or `--data`),
+and the 2025 feature engineering from `tools/legacy_2025/data_toolkit.py`.
 
-Run it with the 2025 interpreter, not this repo's::
+Run it with the 2025 interpreter (`requirements-705.txt`), not this repo's::
+
+    .venv-705/Scripts/python.exe tools/replay_2025_charge.py --artifacts path/to/solution
+
+`--legacy` instead reads everything from the original working checkout, which is how the
+published figure was first produced::
 
     ../caa-challenge-frequency/.venv-705/Scripts/python.exe \
         tools/replay_2025_charge.py --legacy ../caa-challenge-frequency
@@ -45,10 +52,24 @@ AMOUNT_MODEL_VERSION = "019"  # the saved severity XGBoost
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
+        "--artifacts",
+        default=None,
+        help="folder holding the published 2025 solution (Kaggle dataset "
+        "mariodefrance/caa-challenge-2025-solution)",
+    )
+    source.add_argument(
         "--legacy",
-        default="../caa-challenge-frequency",
-        help="checkout holding the 2025 model artifacts, data and helper modules",
+        default=None,
+        help="original working checkout holding the 2025 model artifacts, data and helpers "
+        "(default when --artifacts is not given: ../caa-challenge-frequency)",
+    )
+    parser.add_argument(
+        "--data",
+        default=None,
+        help="folder with the challenge CSVs and Incendies.csv (default: this repository's "
+        "data/ with --artifacts, <legacy>/data with --legacy)",
     )
     parser.add_argument(
         "--out",
@@ -59,20 +80,43 @@ def main() -> int:
     args = parser.parse_args()
 
     here = Path(__file__).resolve().parents[1]
-    legacy = Path(args.legacy).resolve()
     out_path = Path(args.out) if args.out else here / "data" / "ab_arms" / "replay_2025_charge.json"
 
-    legacy_src = legacy / "src"
-    if not (legacy_src / "model" / "amount" / f"{AMOUNT_MODEL_VERSION}_xgboost.json").exists():
-        print(f"ERROR: 2025 artifacts not found under {legacy_src / 'model'}", file=sys.stderr)
-        print("Point --legacy at the checkout that holds them.", file=sys.stderr)
+    if args.artifacts:
+        artifacts = Path(args.artifacts).resolve()
+        target_carver_path = artifacts / "cm_carver_freq_tschuprowt.json"
+        amount_carver_path = artifacts / f"{AMOUNT_CARVER_VERSION}_carver.json"
+        best_features_path = artifacts / f"{AMOUNT_CARVER_VERSION}_best_features.json"
+        model_path = artifacts / f"{AMOUNT_MODEL_VERSION}_xgboost.json"
+        handoff_path = artifacts / "frequency_2025_handoff.csv.gz"
+        helper_dir = here / "tools" / "legacy_2025"
+        data_dir = Path(args.data).resolve() if args.data else here / "data"
+        source_label = str(artifacts)
+    else:
+        legacy = Path(args.legacy or "../caa-challenge-frequency").resolve()
+        legacy_model = legacy / "src" / "model"
+        target_carver_path = legacy_model / "cm_carver_freq_tschuprowt.json"
+        amount_carver_path = legacy_model / "amount" / f"{AMOUNT_CARVER_VERSION}_carver.json"
+        best_features_path = legacy_model / "amount" / f"{AMOUNT_CARVER_VERSION}_best_features.json"
+        model_path = legacy_model / "amount" / f"{AMOUNT_MODEL_VERSION}_xgboost.json"
+        handoff_path = legacy / "data" / f"frequency_{FREQ_VERSION}.csv"
+        helper_dir = legacy / "src" / "utils"
+        data_dir = Path(args.data).resolve() if args.data else legacy / "data"
+        source_label = str(legacy)
+
+    required = (target_carver_path, amount_carver_path, best_features_path, model_path,
+                handoff_path, helper_dir / "data_toolkit.py",
+                data_dir / "train_input_Z61KlZo.csv", data_dir / "train_output_DzPxaPY.csv",
+                data_dir / "Incendies.csv")
+    missing_files = [str(path) for path in required if not path.exists()]
+    if missing_files:
+        print("ERROR: missing inputs:\n  " + "\n  ".join(missing_files), file=sys.stderr)
         return 2
 
-    # the 2025 helpers live in src/utils/ and were imported as top-level modules when the
-    # notebooks ran; the data toolkit resolves its own data directory, so pin it explicitly
-    sys.path.insert(0, str(legacy_src / "utils"))
-    os.environ.setdefault("CAA_DATA_DIR", str(legacy / "data"))
-    os.chdir(legacy_src)  # so "model/..." and "../data/..." resolve as they did in 2025
+    # the 2025 helpers were imported as top-level modules when the notebooks ran; the data
+    # toolkit resolves its own data directory, so pin it explicitly
+    sys.path.insert(0, str(helper_dir))
+    os.environ["CAA_DATA_DIR"] = str(data_dir)
 
     import pandas as pd
     from sklearn.metrics import root_mean_squared_error
@@ -82,21 +126,20 @@ def main() -> int:
     from AutoCarver import BinaryCarver, ContinuousCarver
     from data_toolkit import Processor
 
-    data_path = "../data/"
     target_col = "CM"
 
     # --- the 2025 severity notebook, cell by cell -------------------------------------
     # cell 0: load and join
-    data = pd.read_csv(data_path + "train_input_Z61KlZo.csv", low_memory=False)
+    data = pd.read_csv(data_dir / "train_input_Z61KlZo.csv", low_memory=False)
     data.set_index("ID", inplace=True)
-    target = pd.read_csv(data_path + "train_output_DzPxaPY.csv", low_memory=False)
+    target = pd.read_csv(data_dir / "train_output_DzPxaPY.csv", low_memory=False)
     target.set_index("ID", inplace=True)
     data = data.join(target.drop("ANNEE_ASSURANCE", axis=1))
     print("data", data.shape, flush=True)
 
     # cell 1: the split is stratified on the *discretized* claim amount, so the 2025
     # target carver has to be loaded to reproduce it
-    target_carver = BinaryCarver.load("model/cm_carver_freq_tschuprowt.json")
+    target_carver = BinaryCarver.load(str(target_carver_path))
     y_freq = target_carver.transform(data)[target_col]
     x_train, x_dev, y_train, y_dev = train_test_split(
         data, data[target_col], test_size=0.2, random_state=42, stratify=y_freq
@@ -109,24 +152,25 @@ def main() -> int:
     x_dev = proc.transform(x_dev)
 
     # cells 8 + 13: the saved carver, applied -- not re-fitted
-    carver = ContinuousCarver.load(f"model/amount/{AMOUNT_CARVER_VERSION}_carver.json")
+    carver = ContinuousCarver.load(str(amount_carver_path))
     x_train = carver.transform(x_train)
     x_dev = carver.transform(x_dev)
     print("carved", x_train.shape, x_dev.shape, flush=True)
 
-    # cell 17: the frequency model's hand-off, as saved in 2025
-    merged = pd.read_csv(data_path + f"frequency_{FREQ_VERSION}.csv", low_memory=False)
+    # cell 17: the frequency model's hand-off, as saved in 2025 (the published copy keeps
+    # only ID, pred_sum and the columns the saved severity model reads, which gives the
+    # model identical inputs: every other hand-off column is either dropped by this join
+    # or never selected)
+    merged = pd.read_csv(handoff_path, low_memory=False)
     merged.set_index("ID", inplace=True)
     x_train = x_train.join(merged[[c for c in merged.columns if c not in x_train.columns]])
     x_dev = x_dev.join(merged[[c for c in merged.columns if c not in x_dev.columns]])
 
     # cell 25 + 46: the saved feature list and the saved model
-    with open(
-        f"model/amount/{AMOUNT_CARVER_VERSION}_best_features.json", "r", encoding="utf-8"
-    ) as handle:
+    with open(best_features_path, "r", encoding="utf-8") as handle:
         best_features = json.load(handle)
     xgb = XGBRegressor()
-    xgb.load_model(f"model/amount/{AMOUNT_MODEL_VERSION}_xgboost.json")
+    xgb.load_model(str(model_path))
 
     # the saved booster carries the exact columns it was fit on, which is more reliable
     # than re-deriving them from hyper-parameters we no longer have
@@ -196,11 +240,11 @@ def main() -> int:
     results["control_passed"] = ok
     results["n_model_features"] = len(selected_features)
     results["artifacts"] = {
-        "target_carver": "model/cm_carver_freq_tschuprowt.json",
-        "amount_carver": f"model/amount/{AMOUNT_CARVER_VERSION}_carver.json",
-        "amount_model": f"model/amount/{AMOUNT_MODEL_VERSION}_xgboost.json",
-        "frequency_handoff": f"data/frequency_{FREQ_VERSION}.csv",
-        "legacy_checkout": str(legacy),
+        "target_carver": target_carver_path.name,
+        "amount_carver": amount_carver_path.name,
+        "amount_model": model_path.name,
+        "frequency_handoff": handoff_path.name,
+        "source": "--artifacts" if args.artifacts else "--legacy",
     }
 
     out_path.parent.mkdir(parents=True, exist_ok=True)

@@ -48,6 +48,7 @@ __pycache__/
 # from src/ by tools/build_kaggle.py right before a push.
 /kaggle/*/*
 !/kaggle/*/kernel-metadata.json
+!/kaggle/*/dataset-metadata.json
 
 # The article is held back from GitHub until Towards Data Science publishes it (TDS promotes
 # pieces that appear there first). It stays the local source of record; re-add after publication.

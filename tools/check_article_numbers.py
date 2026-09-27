@@ -67,10 +67,16 @@ check("table's rounded carve times", round(T_FREQ_QUAL_2025), 2842, 0)
 check("table's rounded quantitative carve", round(T_FREQ_QUANT_2025), 383, 0)
 check("table's rounded severity carve", round(T_SEV_2025), 4725, 0)
 check("table's rounded 2026 severity carve", round(T_SEV_2026), 140, 0)
-check("3226+4725 = 133 min of 2025 carving",
-      (T_FREQ_TOTAL_2025 + T_SEV_2025) / 60, 133, 0.5)
+# like for like: the 2025 quantitative carve (383 s) has no 2026 counterpart, so the
+# opening verdict leaves it out
+check("2842+4725 = 126 min of 2025 carving, same features as 2026",
+      (T_FREQ_QUAL_2025 + T_SEV_2025) / 60, 126, 0.5)
 check("120+140 = 4.3 min of 2026 carving",
       (T_FREQ_TOTAL_2026 + T_SEV_2026) / 60, 4.3, 0.05)
+check("§3.1 frequency carve factor beyond 6 workers (~4x)",
+      T_FREQ_QUAL_2025 / T_FREQ_QUAL_2026 / 6, 4, 0.1)
+check("§3.1 severity factor beyond 6 workers (~5.6x)", T_SEV_2025 / T_SEV_2026 / 6, 5.6, 0.05)
+check("§3.1 repeat spread set against a 24x gap", T_FREQ_QUAL_2025 / T_FREQ_QUAL_2026, 24, 0.5)
 check("2842 s = 47.4 min", T_FREQ_QUAL_2025 / 60, 47.4, 0.05)
 check("3226 s = 53.8 min", T_FREQ_TOTAL_2025 / 60, 53.8, 0.05)
 check("4725 s = 78.7 min", T_SEV_2025 / 60, 78.7, 0.05)
@@ -149,6 +155,10 @@ if SEED_FREQ_CSV.exists():
     gap = abs(FREQ_2026 - FREQ_2025)
     check("2026-2025 frequency gap", gap, 0.00055, 0.00001)
     check("0.0101/0.00055 = 18x", spread / gap, 18, 0.5)
+    check("§3.3 seeds landing above (worse than) the 2025 baseline",
+          int((freq.log_loss_dev > FREQ_2025).sum()), 3, 0)
+    check("§3.3 seeds landing below the 2025 baseline",
+          int((freq.log_loss_dev < FREQ_2025).sum()), 1, 0)
 else:
     results.append((False, f"FAIL  {SEED_FREQ_CSV} missing"))
 
@@ -290,6 +300,12 @@ if all(v is not None for v in {**own, **fix, **amt}.values()):
           gap_ratio(fix["ob"].log_loss_dev, fix["nc"].log_loss_dev), 1.59, 0.01)
     check("§3.4 same features: the two binners draw",
           gap_ratio(fix["ac"].log_loss_dev, fix["ob"].log_loss_dev), 0.45, 0.01)
+    binner_gap = abs(float(fix["ac"].log_loss_dev.mean()) - float(fix["ob"].log_loss_dev.mean()))
+    pipeline_gap = abs(float(own["ac"].log_loss_dev.mean()) - float(own["ob"].log_loss_dev.mean()))
+    check("§3.4 binner gap on identical features (0.0063)", binner_gap, 0.0063, 0.00005)
+    check("§3.4 selection swing (0.05 log loss)", pipeline_gap + binner_gap, 0.05, 0.005)
+    check("takeaway: pipeline gap is seven times the binner gap",
+          pipeline_gap / binner_gap, 7, 0.5)
 
     # With the columns fed in the selector's own order, the AutoCarver fixed arm IS the
     # own-selection arm, so matrix_frequency_fixed_autocarver.csv carries copied rows
@@ -319,14 +335,38 @@ if all(v is not None for v in {**own, **fix, **amt}.values()):
     check("§3.4 severity lift: optbinning", float(amt["ob"].top_decile_lift_dev.mean()), 3.94, 0.005)
     check("§3.4 severity lift: optbinning vs no carving",
           gap_ratio(amt["ob"].top_decile_lift_dev, amt["nc"].top_decile_lift_dev), 2.41, 0.01)
+    check("§3.4 severity lift: AutoCarver vs no carving (inside the noise)",
+          gap_ratio(amt["ac"].top_decile_lift_dev, amt["nc"].top_decile_lift_dev), 0.74, 0.01)
+    check("§3.4 severity lift: the two binners draw",
+          gap_ratio(amt["ac"].top_decile_lift_dev, amt["ob"].top_decile_lift_dev), 0.44, 0.01)
 
-    # the overfitting claim: every binned seed near 1.0, the unbinned arm's seed 7 at 0.31
+    # severity dev RMSE, named pairwise gaps
+    check("§3.4 severity RMSE gap: AutoCarver vs no carving",
+          gap_ratio(amt["ac"].rmse_dev, amt["nc"].rmse_dev), 0.09, 0.005)
+    check("§3.4 severity RMSE gap: AutoCarver vs optbinning",
+          gap_ratio(amt["ac"].rmse_dev, amt["ob"].rmse_dev), 0.58, 0.005)
+    check("§3.4 severity RMSE gap: no carving vs optbinning",
+          gap_ratio(amt["nc"].rmse_dev, amt["ob"].rmse_dev), 0.89, 0.005)
+
+    # the overfitting claim: optbinning at 1.01 on every seed, AutoCarver between 0.96 and
+    # 1.06, the unbinned arm's seed 7 at 0.31
     ratios = {k: (v.rmse_train / v.rmse_dev).round(2).tolist() for k, v in amt.items()}
     worst = min(min(v) for v in ratios.values())
     check("§3.4 worst train/dev RMSE ratio (the memorising seed)", worst, 0.31, 0.005)
-    binned_ok = all(abs(r - 1.01) <= 0.06 for k in ("ac", "ob") for r in ratios[k])
-    results.append((binned_ok, f"{'PASS' if binned_ok else 'FAIL'}  §3.4 every binned seed's "
-                               f"train/dev RMSE ratio is near 1.0"))
+    ob_ok = all(r == 1.01 for r in ratios["ob"])
+    results.append((ob_ok, f"{'PASS' if ob_ok else 'FAIL'}  §3.4 every optbinning seed's "
+                           f"train/dev RMSE ratio is 1.01: {ratios['ob']}"))
+    check("§3.4 AutoCarver's lowest train/dev RMSE ratio", min(ratios["ac"]), 0.96, 0)
+    check("§3.4 AutoCarver's highest train/dev RMSE ratio", max(ratios["ac"]), 1.06, 0)
+
+    # the depth mechanism, shared feature set
+    check("§3.4 no-carving depths are 2, 2, 9, 2",
+          int(amt["nc"].max_depth.tolist() == [2, 2, 9, 2]), 1, 0)
+    check("§3.4 binned seeds at depth 1 (seven of eight)",
+          int((amt["ac"].max_depth == 1).sum() + (amt["ob"].max_depth == 1).sum()), 7, 0)
+    ac2026 = amt["ac"].loc[amt["ac"].seed == 2026].iloc[0]
+    check("§3.4 AutoCarver seed 2026 depth", int(ac2026.max_depth), 4, 0)
+    check("§3.4 AutoCarver seed 2026 lift", float(ac2026.top_decile_lift_dev), 2.17, 0.005)
 
     # optbinning's other configurations
     for label, name, claimed in (("rank-encoded ordinals", "matrix_frequency_ranks_optbinning.csv", 0.9571),

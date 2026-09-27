@@ -49,7 +49,11 @@ will not be byte-identical.
 
 > https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025
 
-The two 2026 notebooks also run there directly, attached to that dataset:
+The saved 2025 models, which the 2025 baseline replay needs, are a separate dataset:
+
+> https://www.kaggle.com/datasets/mariodefrance/caa-challenge-2025-solution
+
+The two 2026 notebooks also run there directly, attached to the first dataset:
 [frequency](https://www.kaggle.com/code/mariodefrance/caa-frequency-model) ·
 [severity](https://www.kaggle.com/code/mariodefrance/caa-amount-model).
 
