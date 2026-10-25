@@ -11,7 +11,9 @@ dependencies = [
     # The 2026 arm is measured on AutoCarver 7.7.3. The 2025 arm ran on 7.0.5 and is
     # reproduced only by the timed baseline notebooks, which need their own environment
     # (see README.md) -- 7.0.5 and the current line are not API-compatible.
-    "autocarver[jupyter]>=7.7.3",
+    # Capped at 7.8.1: 7.8.2 rewrote DistanceMeasure (used by the severity selector) and 8.0
+    # changes Cramer's V / Tschuprow's T, so later releases select different features.
+    "autocarver[jupyter]>=7.7.3,<=7.8.1",
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.5",
     "pandas>=2.2.3,<3",

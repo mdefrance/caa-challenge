@@ -42,7 +42,7 @@ INSTALL_CELL = '''import importlib.metadata as md
 import subprocess
 import sys
 
-REQ = ["AutoCarver>=7.7.3"]
+REQ = ["AutoCarver>=7.7.3,<=7.8.1"]
 
 try:
     autocarver_version = md.version("AutoCarver")

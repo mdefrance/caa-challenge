@@ -179,7 +179,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autocarver", extras = ["jupyter"], specifier = ">=7.7.3" },
+    { name = "autocarver", extras = ["jupyter"], specifier = ">=7.7.3,<=7.8.1" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipywidgets", specifier = ">=8.1.5" },
     { name = "jinja2", specifier = ">=3.1.5" },

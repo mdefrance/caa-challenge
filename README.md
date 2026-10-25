@@ -175,12 +175,15 @@ them against that interpreter.
 
 ## Reproducing the article's numbers
 
-The dependency floor is deliberate: `pyproject.toml` pins
-`autocarver[jupyter]>=7.7.3`. Older releases still import and run, but they
+The dependency range is deliberate: `pyproject.toml` pins
+`autocarver[jupyter]>=7.7.3,<=7.8.1`. Older releases still import and run, but they
 apportion the selection budget differently and rank ordinal candidate groupings
 differently, so they quietly produce a different feature mix and different
-numbers rather than raising anything. Pin the floor and the notebooks reproduce
-what the article reports.
+numbers rather than raising anything. Newer releases do the same from the other
+side: 7.8.2 computes `DistanceMeasure` as a true distance correlation (the
+severity selector uses it), and 8.0 changes Cramér's V and Tschuprow's T. The
+article's numbers were measured on 7.7.3, which `uv.lock` pins; `uv sync`
+installs exactly that and the notebooks reproduce what the article reports.
 
 Reproducible is not the same as representative, and the repository says so with a
 measurement rather than a caveat: `tools/seed_variance.py` re-runs the identical

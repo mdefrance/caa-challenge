@@ -29,7 +29,7 @@ Push the utility scripts first, since both notebooks import them.
 
 **Each notebook needs one setting the push cannot carry:** the Kaggle package requirement
 `AutoCarver==7.7.3` (notebook settings, requirements; 7.8.0 works too, but 7.7.3 is what the
-article measured). Kaggle installs it before the kernel starts, which is the only way past the
+article measured; never 7.8.2 or later, which select different features). Kaggle installs it before the kernel starts, which is the only way past the
 numpy trap in a batch run: AutoCarver needs a newer numpy than the image, and installing it
 inside a running kernel forces a restart that Kaggle's runner treats as `DeadKernelError`. Two traps in that field, both hit on 2026-09-22:
 
