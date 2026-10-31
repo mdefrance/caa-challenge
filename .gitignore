@@ -51,6 +51,6 @@ __pycache__/
 !/kaggle/*/kernel-metadata.json
 !/kaggle/*/dataset-metadata.json
 
-# The article is held back from GitHub until Towards Data Science publishes it (TDS promotes
-# pieces that appear there first). It stays the local source of record; re-add after publication.
+# Held back from GitHub during TDS's one-month exclusivity window (published 2026-10-30).
+# Re-add on or after 2026-11-30; the canonical note to TDS is already in the file.
 /ARTICLE.md

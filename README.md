@@ -19,8 +19,9 @@ all feature engineering and supervised binning handled by the open-source
 [**AutoCarver**](https://github.com/mdefrance/AutoCarver) library and the final
 models built with XGBoost tuned via Optuna.
 
-> 📝 **An article on this work is in review.** It walks through the method and revisits it
-> with the current library; a link goes here once it is published. Every figure it quotes
+> 📝 **Article:** [Binning or Feature Selection: Which One Won Us an Insurance Hackathon?](https://towardsdatascience.com/binning-or-feature-selection-which-one-won-us-an-insurance-hackathon/)
+> (Towards Data Science, 30 October 2026, Editor's Pick).
+> It walks through the method and revisits it with the current library. Every figure it quotes
 > was measured on the notebooks in this repository, on one machine, with nothing else
 > running, and every measurement has a script here that regenerates it.
 
